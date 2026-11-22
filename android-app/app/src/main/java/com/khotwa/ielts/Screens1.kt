@@ -62,10 +62,11 @@ fun HomeScreen(st: Store, nav: Nav) {
             Tag(typeName(st.type), Lime); Tag(tr("Goal ", "الهدف ") + st.goal, Mustard); Tag(tr("${st.minutes} min", "${st.minutes} دقيقة"), Sky); Tag(tr("Streak ", "متتالية ") + st.streak(), Coral)
         }
         if (!st.placed) {
-            NCard(bg = Lime, onClick = { nav.go("quiz:placement") }) {
-                Text(tr("Start with the placement test", "ابدأ باختبار تحديد المستوى"), style = H2)
-                Text(tr("${Content.bank.count { it.placement }} questions, 30 minutes. It finds your level and builds a program up to your target.",
-                    "${Content.bank.count { it.placement }} سؤال في 30 دقيقة. يحدد مستواك ويبني برنامجًا حتى تصل لهدفك."), style = Body)
+            NCard(bg = Lime, onClick = { nav.go("placement") }) {
+                val part = st.mapInt("plc", "step")
+                Text(if (part in 1..5) tr("Continue the placement test (part $part of 5)", "أكمل اختبار تحديد المستوى (الجزء $part من 5)") else tr("Start with the placement test", "ابدأ باختبار تحديد المستوى"), style = H2)
+                Text(tr("5 parts: grammar, reading, listening, writing and speaking, about 50 minutes. You can stop between parts.",
+                    "5 أجزاء: القواعد والقراءة والاستماع والكتابة والمحادثة، حوالي 50 دقيقة. يمكنك التوقف بين الأجزاء."), style = Body)
             }
         } else {
             NCard(bg = Mustard, onClick = { nav.go("program") }) {
@@ -97,7 +98,7 @@ fun ProgramScreen(st: Store, nav: Nav) {
     Screen(tr("My program", "برنامجي"), { nav.back() }) {
         Page {
             if (!st.placed) {
-                NCard(bg = Lime, onClick = { nav.go("quiz:placement") }) {
+                NCard(bg = Lime, onClick = { nav.go("placement") }) {
                     Text(tr("Take the placement test first", "ابدأ باختبار تحديد المستوى أولًا"), style = H2)
                     Text(tr("Your program is built from your level in each skill and your target band. Until then you see a 4-week starter plan.", "يُبنى برنامجك من مستواك في كل مهارة والدرجة المستهدفة. حتى ذلك الحين تظهر خطة بداية لمدة 4 أسابيع."), style = Body)
                 }
@@ -164,7 +165,7 @@ fun ProgramScreen(st: Store, nav: Nav) {
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                NButton(tr("Retake placement", "أعد اختبار المستوى"), bg = Sky) { nav.go("quiz:placement") }
+                NButton(tr("Retake placement", "أعد اختبار المستوى"), bg = Sky) { st.resetPlacement(); nav.go("placement") }
                 if (!confirm) NButton(tr("Restart program", "ابدأ البرنامج من جديد"), bg = Card) { confirm = true }
                 else NButton(tr("Yes, restart today", "نعم، ابدأ من اليوم"), bg = Coral) { st.restartProgram(); confirm = false }
             }

@@ -132,7 +132,7 @@
    ],
    "answer": 0,
    "why": "The text says more conversations with neighbours, which agrees with the statement.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 9,
@@ -146,7 +146,7 @@
    ],
    "answer": 1,
    "why": "The text says no clear change, not a proven decrease.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 10,
@@ -160,7 +160,7 @@
    ],
    "answer": 2,
    "why": "There is no information about the users' ages. Do not infer from your own experience.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 11,
@@ -175,7 +175,7 @@
    ],
    "answer": 1,
    "why": "Not choosing at random limits conclusions about cause and effect.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 12,
@@ -190,7 +190,7 @@
    ],
    "answer": 1,
    "why": "The main idea: not every city can use the same decision.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 13,
@@ -205,7 +205,7 @@
    ],
    "answer": 1,
    "why": "Inside the uninsulated buildings the effect was greatest.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 14,
@@ -219,7 +219,7 @@
    ],
    "answer": 0,
    "why": "The text mentions a possible rise in heating demand in colder areas.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 15,
@@ -233,7 +233,7 @@
    ],
    "answer": 2,
    "why": "There is no comparison of installation cost. So Not Given.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 16,
@@ -248,7 +248,7 @@
    ],
    "answer": 2,
    "why": "The speaker corrected the information: now begins on Wednesday.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 17,
@@ -263,7 +263,7 @@
    ],
    "answer": 1,
    "why": "He said six thirty, then confirmed not six.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 18,
@@ -278,7 +278,7 @@
    ],
    "answer": 2,
    "why": "includes the printed workbook. You must bring the camera yourself.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 19,
@@ -293,7 +293,7 @@
    ],
    "answer": 2,
    "why": "fourteen = 14, not forty.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 20,
@@ -308,7 +308,7 @@
    ],
    "answer": 1,
    "why": "The assignment changed to record the types of plants.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 21,
@@ -323,7 +323,7 @@
    ],
    "answer": 2,
    "why": "Meeting is at 9, but departure is at 9:15.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 22,
@@ -338,7 +338,7 @@
    ],
    "answer": 2,
    "why": "we will provide notebooks.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 23,
@@ -353,7 +353,7 @@
    ],
    "answer": 1,
    "why": "The indoor alternative is linked to heavy rain only.",
-   "placement": true
+   "placement": false
   },
   {
    "id": 24,
@@ -871,7 +871,7 @@
    ],
    "answer": 1,
    "why": "Ten-minute walks still lower blood pressure, so short walks help.",
-   "placement": true,
+   "placement": false,
    "id": 58
   },
   {
@@ -886,7 +886,7 @@
    ],
    "answer": 2,
    "why": "Entry is free for under-16s; adults pay except on the first Sunday.",
-   "placement": true,
+   "placement": false,
    "id": 59
   },
   {
@@ -901,7 +901,7 @@
    ],
    "answer": 2,
    "why": "The speaker corrected herself: not room 12, room 21.",
-   "placement": true,
+   "placement": false,
    "id": 60
   },
   {
@@ -916,7 +916,7 @@
    ],
    "answer": 2,
    "why": "Laptops are provided; calculators are not allowed; only ID is required.",
-   "placement": true,
+   "placement": false,
    "id": 61
   },
   {
@@ -1455,6 +1455,126 @@
    "why": "Its main advantage: real-time bus information.",
    "placement": false,
    "id": 97
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "Hardly ___ the meeting started when the fire alarm rang.",
+   "options": [
+    "had",
+    "did",
+    "was",
+    "has"
+   ],
+   "answer": 0,
+   "why": "After 'Hardly' at the start, the past perfect is inverted: Hardly had the meeting started...",
+   "placement": true,
+   "id": 98
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "The proposal, ___ was criticised at first, was eventually adopted.",
+   "options": [
+    "that",
+    "which",
+    "what",
+    "who"
+   ],
+   "answer": 1,
+   "why": "Non-defining relative clause (with commas) about a thing uses which, not that.",
+   "placement": true,
+   "id": 99
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "Not only ___ costs, but it also improves quality.",
+   "options": [
+    "it reduces",
+    "does it reduce",
+    "reduces it",
+    "it does reduce"
+   ],
+   "answer": 1,
+   "why": "After 'Not only' at the start, use question word order: does it reduce.",
+   "placement": true,
+   "id": 100
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "Had the data been checked, the error ___.",
+   "options": [
+    "would be avoided",
+    "would have been avoided",
+    "will have been avoided",
+    "had been avoided"
+   ],
+   "answer": 1,
+   "why": "Third conditional with inversion: Had + past participle, would have been avoided.",
+   "placement": true,
+   "id": 101
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "The new policy had a ___ effect on unemployment, cutting it by half.",
+   "options": [
+    "negligible",
+    "profound",
+    "marginal",
+    "superficial"
+   ],
+   "answer": 1,
+   "why": "Cutting it by half is a big effect: profound.",
+   "placement": true,
+   "id": 102
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "Which word is closest in meaning to 'ubiquitous'?",
+   "options": [
+    "rare",
+    "found everywhere",
+    "expensive",
+    "ancient"
+   ],
+   "answer": 1,
+   "why": "Ubiquitous means present everywhere.",
+   "placement": true,
+   "id": 103
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "The researchers ___ a new hypothesis to explain the results.",
+   "options": [
+    "made up",
+    "did",
+    "put forward",
+    "told"
+   ],
+   "answer": 2,
+   "why": "The natural collocation is put forward a hypothesis.",
+   "placement": true,
+   "id": 104
+  },
+  {
+   "skill": "foundation",
+   "context": "",
+   "q": "The latest findings appear to ___ the earlier theory.",
+   "options": [
+    "undermine",
+    "underlie",
+    "undergo",
+    "undertake"
+   ],
+   "answer": 0,
+   "why": "Undermine means to weaken: the findings weaken the theory.",
+   "placement": true,
+   "id": 105
   }
  ],
  "lessons": [
@@ -7142,5 +7262,337 @@
    "def": "to take on a task or responsibility",
    "ex": "The team undertook a three-year study."
   }
- ]
+ ],
+ "placement": {
+  "reading": {
+   "id": "plr",
+   "mock": 0,
+   "title": "How habits form",
+   "topic": "Psychology · behaviour",
+   "paras": [
+    [
+     "A",
+     "Every day, people perform hundreds of actions without thinking about them: locking the door, checking a phone, taking the same route to work. Researchers estimate that around forty per cent of what we do each day is driven by habit rather than by conscious decisions. Understanding how these automatic behaviours develop has become an important area of psychology, partly because habits are so difficult to change."
+    ],
+    [
+     "B",
+     "Most researchers describe a habit as a loop with three parts. First, a cue, such as a time of day or a place, triggers the behaviour. Second comes the routine itself. Third, there is a reward, which may be as small as a feeling of relief. Over many repetitions, the brain links the cue directly to the routine, so that the reward no longer needs to be consciously expected."
+    ],
+    [
+     "C",
+     "A popular claim says that a new habit takes twenty-one days to form. This figure appears to come from the observations of a plastic surgeon in the 1960s about how long patients took to get used to a change in their appearance, not from studies of habit. When researchers at University College London followed volunteers who were trying to adopt a new daily behaviour, they found that it took an average of sixty-six days for the action to feel automatic, although the range was very wide, from eighteen to over two hundred days."
+    ],
+    [
+     "D",
+     "The same study produced a more encouraging finding. Missing a single day did not seriously damage the process. What mattered was repeating the behaviour in a consistent context, for example always doing it after breakfast. Simple actions, such as drinking a glass of water, became automatic much faster than demanding ones, such as doing fifty sit-ups."
+    ],
+    [
+     "E",
+     "Breaking an old habit is generally harder than forming a new one, because the original link between cue and routine is never completely erased. Psychologists therefore suggest changing the environment rather than relying on willpower alone. Someone who wants to stop snacking, for instance, may find it more effective not to keep snacks at home than to try to resist them every evening."
+    ]
+   ],
+   "groups": [
+    {
+     "ins": "Questions 1-4. Choose TRUE if the statement agrees with the information, FALSE if it contradicts the information, or NOT GIVEN if there is no information on this.",
+     "qs": [
+      {
+       "t": "tfng",
+       "q": "About forty per cent of daily actions are habits.",
+       "a": 0,
+       "w": "Paragraph A: around forty per cent of what we do each day is driven by habit.",
+       "n": 1
+      },
+      {
+       "t": "tfng",
+       "q": "The twenty-one-day figure came from research on habits.",
+       "a": 1,
+       "w": "Paragraph C: it came from a surgeon's observations, not from studies of habit.",
+       "n": 2
+      },
+      {
+       "t": "tfng",
+       "q": "Women formed habits faster than men in the London study.",
+       "a": 2,
+       "w": "The passage does not compare men and women.",
+       "n": 3
+      },
+      {
+       "t": "tfng",
+       "q": "Missing one day seriously harmed habit formation.",
+       "a": 1,
+       "w": "Paragraph D: missing a single day did not seriously damage the process.",
+       "n": 4
+      }
+     ]
+    },
+    {
+     "ins": "Questions 5-7. Complete the sentences. Write NO MORE THAN TWO WORDS AND/OR A NUMBER from the passage for each answer.",
+     "qs": [
+      {
+       "t": "gap",
+       "q": "In a habit loop, the first part is a ___.",
+       "a": [
+        "cue"
+       ],
+       "w": "Paragraph B: First, a cue.",
+       "n": 5
+      },
+      {
+       "t": "gap",
+       "q": "On average, a new behaviour took ___ days to feel automatic.",
+       "a": [
+        "66",
+        "sixty-six",
+        "sixty six"
+       ],
+       "w": "Paragraph C: an average of sixty-six days.",
+       "n": 6
+      },
+      {
+       "t": "gap",
+       "q": "Habits formed best when repeated in a consistent ___.",
+       "a": [
+        "context"
+       ],
+       "w": "Paragraph D: in a consistent context.",
+       "n": 7
+      }
+     ]
+    },
+    {
+     "ins": "Questions 8-10. Choose the correct letter, A, B, C or D.",
+     "qs": [
+      {
+       "t": "mcq",
+       "q": "According to paragraph B, after many repetitions",
+       "a": 2,
+       "w": "B: the brain links the cue directly to the routine.",
+       "n": 8,
+       "o": [
+        "the reward becomes larger",
+        "the cue disappears",
+        "the cue leads to the routine automatically",
+        "people stop enjoying the reward"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "Which behaviour became automatic most quickly?",
+       "a": 0,
+       "w": "D: simple actions such as drinking water became automatic faster.",
+       "n": 9,
+       "o": [
+        "Drinking a glass of water",
+        "Doing fifty sit-ups",
+        "Eating breakfast",
+        "Walking to work"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "What do psychologists recommend for breaking a habit?",
+       "a": 3,
+       "w": "E: changing the environment rather than relying on willpower alone.",
+       "n": 10,
+       "o": [
+        "Using more willpower",
+        "Replacing it within 21 days",
+        "Rewarding yourself every evening",
+        "Changing your surroundings"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "listening": {
+   "id": "pll",
+   "mock": 0,
+   "sec": 1,
+   "title": "A phone call and a short talk",
+   "ctx": "Part 1: a man calls a language school. Part 2: a guide talks to new students.",
+   "script": [
+    [
+     "A",
+     "Good morning, Westbrook Language School."
+    ],
+    [
+     "B",
+     "Hello. I'd like to ask about your evening English course."
+    ],
+    [
+     "A",
+     "Certainly. Can I take your name?"
+    ],
+    [
+     "B",
+     "Yes, it's Karim Haddad. Karim is K-A-R-I-M."
+    ],
+    [
+     "A",
+     "Thank you. The evening course runs on Tuesdays and Thursdays. It was going to start on the fifth of October, but it now begins on the twelfth."
+    ],
+    [
+     "B",
+     "The twelfth. And how much does it cost?"
+    ],
+    [
+     "A",
+     "It's two hundred and forty pounds for the term. That includes the coursebook, but not the exam fee."
+    ],
+    [
+     "B",
+     "Fine. And which room is it in?"
+    ],
+    [
+     "A",
+     "Room eighteen, on the first floor. Not room eight, that's the library."
+    ],
+    [
+     "G",
+     "Welcome, everyone, to your first day at Westbrook. I'd like to explain a few things before your classes begin."
+    ],
+    [
+     "G",
+     "Firstly, the main aim of our courses is not grammar on its own, but helping you communicate confidently in real situations, so you'll spend a lot of time speaking in pairs."
+    ],
+    [
+     "G",
+     "Secondly, attendance. If you miss a class, you should email your teacher, not the office, so that they can send you the materials."
+    ],
+    [
+     "G",
+     "The café on the ground floor is open until seven, but the computer room closes earlier, at six, because the technician leaves then."
+    ],
+    [
+     "G",
+     "Finally, every Friday there is a free conversation club. Most students say the best thing about it is meeting people from other countries, even more than the practice itself."
+    ]
+   ],
+   "groups": [
+    {
+     "ins": "Questions 1-5. Complete the notes. Write NO MORE THAN TWO WORDS AND/OR A NUMBER for each answer.",
+     "form": "Evening English course",
+     "qs": [
+      {
+       "t": "gap",
+       "q": "Student's first name: ___",
+       "a": [
+        "karim"
+       ],
+       "w": "K-A-R-I-M.",
+       "n": 1
+      },
+      {
+       "t": "gap",
+       "q": "Days: Tuesdays and ___",
+       "a": [
+        "thursdays",
+        "thursday"
+       ],
+       "w": "Tuesdays and Thursdays.",
+       "n": 2
+      },
+      {
+       "t": "gap",
+       "q": "Start date: ___ October",
+       "a": [
+        "12",
+        "12th",
+        "twelfth",
+        "the twelfth"
+       ],
+       "w": "Changed from the fifth to the twelfth.",
+       "n": 3
+      },
+      {
+       "t": "gap",
+       "q": "Cost for the term: £___",
+       "a": [
+        "240",
+        "two hundred and forty"
+       ],
+       "w": "Two hundred and forty pounds.",
+       "n": 4
+      },
+      {
+       "t": "gap",
+       "q": "Room number: ___",
+       "a": [
+        "18",
+        "eighteen"
+       ],
+       "w": "Room eighteen, not room eight.",
+       "n": 5
+      }
+     ]
+    },
+    {
+     "ins": "Questions 6-10. Choose the correct letter, A, B or C.",
+     "qs": [
+      {
+       "t": "mcq",
+       "q": "The main aim of the courses is to",
+       "a": 1,
+       "w": "helping you communicate confidently in real situations.",
+       "n": 6,
+       "o": [
+        "teach grammar",
+        "help students communicate confidently",
+        "prepare students for exams"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "Students who miss a class should",
+       "a": 2,
+       "w": "email your teacher, not the office.",
+       "n": 7,
+       "o": [
+        "phone the office",
+        "email the office",
+        "email their teacher"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "What time does the computer room close?",
+       "a": 0,
+       "w": "closes earlier, at six.",
+       "n": 8,
+       "o": [
+        "6 pm",
+        "7 pm",
+        "8 pm"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "Why does the computer room close early?",
+       "a": 1,
+       "w": "because the technician leaves then.",
+       "n": 9,
+       "o": [
+        "It is cleaned",
+        "The technician leaves",
+        "Classes start"
+       ]
+      },
+      {
+       "t": "mcq",
+       "q": "What do students like most about the conversation club?",
+       "a": 2,
+       "w": "the best thing is meeting people from other countries, more than the practice itself.",
+       "n": 10,
+       "o": [
+        "It is free",
+        "The speaking practice",
+        "Meeting people from other countries"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ }
 }
