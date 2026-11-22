@@ -105,7 +105,9 @@ fun ProgramScreen(st: Store, nav: Nav) {
             NCard(bg = Lime) {
                 Text(tr("Estimated level", "المستوى التقريبي"), style = H3)
                 Text("${pr.current}  ${if (I18n.ar) "←" else "→"}  ${pr.target}", style = H1.copy(fontSize = 40.sp, lineHeight = 44.sp))
-                if (pr.gap <= 0.0) {
+                if (!st.placed) {
+                    Text(tr("Starter plan for 4 weeks. The real length is calculated after the placement test.", "خطة بداية لمدة 4 أسابيع. المدة الحقيقية تُحسب بعد اختبار المستوى."), style = Body)
+                } else if (pr.gap <= 0.0) {
                     Text(tr("You are at or above your target estimate. The program keeps you exam-ready for 4 weeks. You can raise the target in Settings.",
                         "مستواك التقريبي عند هدفك أو أعلى. البرنامج يحافظ على جاهزيتك 4 أسابيع، ويمكنك رفع الهدف من الإعدادات."), style = Body)
                 } else {
