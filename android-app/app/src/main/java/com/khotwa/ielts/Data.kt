@@ -8,6 +8,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 import java.util.TimeZone
 
+object I18n { var ar by mutableStateOf(false) }
+
+/** Picks the English or Arabic text for the interface. Exam content stays in English. */
+fun tr(en: String, ar: String): String = if (I18n.ar) ar else en
+
 class Q(val t: String, val q: String, val a: Int, val accepted: List<String>, val w: String, val o: List<String>, val n: Int)
 class Group(val ins: String, val opts: List<String>, val form: String?, val qs: List<Q>)
 class Section(
@@ -15,7 +20,13 @@ class Section(
     val paras: List<Pair<String, String>>, val script: List<Pair<String, String>>, val groups: List<Group>
 )
 class BankQ(val id: String, val skill: String, val ctx: String, val q: String, val options: List<String>, val answer: Int, val why: String, val placement: Boolean)
-class Lesson(val id: String, val title: String, val skill: String, val time: String, val sub: String, val body: String, val example: String, val action: String)
+class Lesson(val id: String, val title: String, val skill: String, val time: String, val sub: String, val body: String, val example: String, val action: String,
+             val titleAr: String = "", val subAr: String = "", val bodyAr: String = "", val actionAr: String = "") {
+    fun titleL() = if (I18n.ar && titleAr.isNotBlank()) titleAr else title
+    fun subL() = if (I18n.ar && subAr.isNotBlank()) subAr else sub
+    fun bodyL() = if (I18n.ar && bodyAr.isNotBlank()) bodyAr else body
+    fun actionL() = if (I18n.ar && actionAr.isNotBlank()) actionAr else action
+}
 class Writing(val id: String, val type: String, val task: Int, val title: String, val min: Int, val minutes: Int, val prompt: String, val chart: JSONObject?, val tips: List<String>, val model: String?)
 class Speaking(val id: String, val topic: String, val p1: List<String>, val cue: String, val bullets: List<String>, val p3: List<String>)
 class Vocab(val id: Int, val w: String, val def: String, val ex: String)
@@ -67,7 +78,8 @@ object Content {
         o.getJSONArray("lessons").let { a ->
             lessons = (0 until a.length()).map {
                 val b = a.getJSONObject(it)
-                Lesson(b.optString("id"), b.optString("title"), b.optString("skill"), b.optString("time"), b.optString("sub"), b.optString("body"), b.optString("example"), b.optString("action"))
+                Lesson(b.optString("id"), b.optString("title"), b.optString("skill"), b.optString("time"), b.optString("sub"), b.optString("body"), b.optString("example"), b.optString("action"),
+                    b.optString("title_ar"), b.optString("sub_ar"), b.optString("body_ar"), b.optString("action_ar"))
             }
         }
         reading = sections(o.getJSONArray("reading"), 'R')
@@ -94,6 +106,8 @@ object Content {
         loaded = true
     }
     fun section(id: String) = (reading + listening).first { it.id == id }
+    fun sectionOrNull(id: String) = (reading + listening).firstOrNull { it.id == id }
+    fun mocks(): Int = maxOf(1, reading.maxOfOrNull { it.mock } ?: 1)
 }
 
 fun today(): Int {
@@ -120,6 +134,16 @@ class Store(private val ctx: Context) {
     var start: Int
         get() = r().optInt("start", 0)
         set(v) { root.put("start", v); save() }
+    var lang: String
+        get() = r().optString("lang", "en")
+        set(v) { root.put("lang", v); save(); I18n.ar = v == "ar" }
+    fun est(sk: String): Double? { val m = map("est"); return if (m.has(sk)) m.optDouble(sk) else null }
+    fun setEst(sk: String, v: Double) = putMap("est", sk, v)
+    /** Starts the program again from today, keeping progress and levels. */
+    fun restartProgram() { root.put("start", today()); root.remove("dp"); save() }
+    /** Re-plans from today onwards without moving the day count. */
+    fun replanFuture() { val d = (today() - start + 1).toString(); val m = map("dp"); val keep = JSONObject(); if (m.has(d)) keep.put(d, m.get(d)); root.put("dp", keep); save() }
+    fun bump(k: String, key: String) = putMap(k, key, mapInt(k, key) + 1)
     var placed: Boolean
         get() = r().optBoolean("placed", false)
         set(v) { root.put("placed", v); save() }
@@ -164,6 +188,6 @@ class Store(private val ctx: Context) {
         return n
     }
     fun export(): String = r().toString(2)
-    fun import(txt: String): Boolean = try { root = JSONObject(txt); save(); true } catch (e: Exception) { false }
-    fun reset() { root = JSONObject(); save() }
+    fun import(txt: String): Boolean = try { root = JSONObject(txt); save(); I18n.ar = lang == "ar"; true } catch (e: Exception) { false }
+    fun reset() { val l = lang; root = JSONObject().put("lang", l); save() }
 }

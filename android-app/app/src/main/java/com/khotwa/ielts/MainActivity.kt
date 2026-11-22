@@ -24,6 +24,8 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import java.util.Locale
 
@@ -39,18 +41,26 @@ class Nav {
 
 class MainActivity : ComponentActivity() {
     var tts: TextToSpeech? = null
-    var ttsReady = false
+    var ttsReady by mutableStateOf(false)
+    var ttsEnglish by mutableStateOf(true)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Content.load(this)
         val store = Store(this)
         val nav = Nav()
+        intent.getStringExtra("lang")?.let { if (it == "ar" || it == "en") store.lang = it }
+        I18n.ar = store.lang == "ar"
         intent.getStringExtra("route")?.let { if (it != "home") nav.stack.add(it) }
         tts = TextToSpeech(this) { st ->
-            if (st == TextToSpeech.SUCCESS) { tts?.language = Locale.UK; ttsReady = true }
+            if (st == TextToSpeech.SUCCESS) {
+                val r = tts?.setLanguage(Locale.UK) ?: TextToSpeech.LANG_NOT_SUPPORTED
+                val r2 = if (r < 0) tts?.setLanguage(Locale.US) ?: r else r
+                ttsEnglish = r2 >= 0; ttsReady = true
+            }
         }
         setContent {
+          CompositionLocalProvider(LocalLayoutDirection provides if (I18n.ar) LayoutDirection.Rtl else LayoutDirection.Ltr) {
             BackHandler(enabled = nav.menu || nav.stack.size > 1) { if (nav.menu) nav.menu = false else nav.back() }
             Box(Modifier.fillMaxSize().background(Paper).systemBarsPadding().imePadding()) {
                 Column(Modifier.fillMaxSize()) {
@@ -60,12 +70,13 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                     val top = nav.stack.last()
-                    if (top in listOf("home", "plan", "practice", "words")) BottomBar(top, nav)
+                    if (top in listOf("home", "plan", "practice", "words", "program")) BottomBar(top, nav)
                 }
                 AnimatedVisibility(nav.menu, enter = fadeIn() + slideInVertically { it / 3 }, exit = fadeOut() + slideOutVertically { it / 3 }) {
                     MenuOverlay(nav)
                 }
             }
+          }
         }
     }
 
@@ -75,13 +86,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun BottomBar(cur: String, nav: Nav) {
     Row(Modifier.fillMaxWidth().background(Ink).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceAround) {
-        for ((r, label) in listOf("home" to "Home", "plan" to "Plan", "practice" to "Practice", "words" to "Words")) {
+        for ((r, label) in listOf("home" to tr("Home", "الرئيسية"), "plan" to tr("Plan", "الخطة"), "practice" to tr("Practice", "تدريب"), "words" to tr("Words", "كلمات"))) {
             val on = cur == r
             Box(Modifier.background(if (on) Lime else Ink, RoundedCornerShape(50)).clickable { nav.root(r) }.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Text(label, style = Label.copy(color = if (on) Ink else Paper))
             }
         }
-        Box(Modifier.clickable { nav.menu = true }.padding(horizontal = 10.dp, vertical = 8.dp)) { Text("More", style = Label.copy(color = Paper)) }
+        Box(Modifier.clickable { nav.menu = true }.padding(horizontal = 10.dp, vertical = 8.dp)) { Text(tr("More", "المزيد"), style = Label.copy(color = Paper)) }
     }
 }
 
@@ -89,11 +100,11 @@ fun BottomBar(cur: String, nav: Nav) {
 fun MenuOverlay(nav: Nav) {
     Box(Modifier.fillMaxSize().background(Ink.copy(alpha = 0.92f)).clickable { nav.menu = false }, contentAlignment = Alignment.Center) {
         Column(Modifier.padding(28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text("Menu", style = H1.copy(color = Lime))
-            for ((r, l) in listOf("lessons" to "Lessons", "mocks" to "Mock tests", "progress" to "Progress", "about" to "About and limits", "settings" to "Settings")) {
+            Text(tr("Menu", "القائمة"), style = H1.copy(color = Lime))
+            for ((r, l) in listOf("program" to tr("My program", "برنامجي"), "lessons" to tr("Lessons", "الدروس"), "mocks" to tr("Mock tests", "اختبارات المحاكاة"), "progress" to tr("Progress", "التقدّم"), "about" to tr("About and limits", "عن التطبيق وحدوده"), "settings" to tr("Settings", "الإعدادات"))) {
                 Text(l, style = H1.copy(color = Paper), modifier = Modifier.clickable { nav.go(r) }.padding(vertical = 4.dp))
             }
-            Text("Close", style = Label.copy(color = Mustard), modifier = Modifier.clickable { nav.menu = false }.padding(vertical = 10.dp))
+            Text(tr("Close", "إغلاق"), style = Label.copy(color = Mustard), modifier = Modifier.clickable { nav.menu = false }.padding(vertical = 10.dp))
         }
     }
 }
@@ -109,10 +120,11 @@ fun Route(route: String, st: Store, nav: Nav, act: MainActivity) {
     when (p[0]) {
         "home" -> HomeScreen(st, nav)
         "plan" -> PlanScreen(st, nav)
+        "program" -> ProgramScreen(st, nav)
         "practice" -> PracticeScreen(st, nav)
         "words" -> WordsScreen(st, nav)
         "lessons" -> LessonsScreen(st, nav)
-        "lesson" -> LessonScreen(p[1], st, nav)
+        "lesson" -> if (Content.lessons.any { it.id == p.getOrElse(1) { "" } }) LessonScreen(p[1], st, nav) else LessonsScreen(st, nav)
         "mocks" -> MocksScreen(nav)
         "progress" -> ProgressScreen(st, nav)
         "about" -> AboutScreen(nav)
