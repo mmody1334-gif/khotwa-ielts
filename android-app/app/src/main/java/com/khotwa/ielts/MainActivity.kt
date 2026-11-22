@@ -77,11 +77,11 @@ fun BottomBar(cur: String, nav: Nav) {
     Row(Modifier.fillMaxWidth().background(Ink).padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceAround) {
         for ((r, label) in listOf("home" to "Home", "plan" to "Plan", "practice" to "Practice", "words" to "Words")) {
             val on = cur == r
-            Box(Modifier.background(if (on) Lime else Ink, RoundedCornerShape(50)).clickable { nav.root(r) }.padding(horizontal = 14.dp, vertical = 8.dp)) {
+            Box(Modifier.background(if (on) Lime else Ink, RoundedCornerShape(50)).clickable { nav.root(r) }.padding(horizontal = 10.dp, vertical = 8.dp)) {
                 Text(label, style = Label.copy(color = if (on) Ink else Paper))
             }
         }
-        Box(Modifier.clickable { nav.menu = true }.padding(horizontal = 14.dp, vertical = 8.dp)) { Text("More ☰", style = Label.copy(color = Paper)) }
+        Box(Modifier.clickable { nav.menu = true }.padding(horizontal = 10.dp, vertical = 8.dp)) { Text("More", style = Label.copy(color = Paper)) }
     }
 }
 
