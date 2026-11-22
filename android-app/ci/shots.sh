@@ -13,7 +13,7 @@ shoot() {
   adb exec-out screencap -p > "shots/$n-$2-${1//:/_}.png"
 }
 for r in home program plan "quiz:quick" lessons practice "paper:R:r7" "paper:L:l9" "write:a1" "speak:s1" words progress settings mocks; do shoot "$r" en; done
-for r in home program plan practice settings "lesson:roadmap"; do shoot "$r" ar; done
+for r in home program plan practice settings "lesson:roadmap" "paper:R:r11" "quiz:placement"; do shoot "$r" ar; done
 # rotation test on a reading paper
 adb shell am start -n com.khotwa.ielts/.MainActivity --es route "paper:R:r1" --es lang en >/dev/null; sleep 3
 adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1; sleep 3
