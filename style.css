@@ -114,3 +114,10 @@ footer{padding:0 16px 150px;text-align:center;color:var(--mute);font-size:13px}
 .task.done .chk::after{content:'';width:8px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
 .grid>*{min-width:0}.grid small{overflow-wrap:anywhere}.num{font-size:clamp(30px,11vw,44px)}
 @media(max-width:360px){.g3{gap:8px}.g3 .tile{padding:10px 6px}}
+
+.apkbar{display:flex;align-items:center;gap:14px;margin:0 0 16px;padding:14px 18px;background:var(--lime);color:var(--ink);border:2px solid var(--ink);border-radius:22px;box-shadow:5px 5px 0 var(--ink);text-decoration:none;font-family:'Bricolage Grotesque',sans-serif;transition:transform .12s,box-shadow .12s}
+.apkbar:active{transform:translate(4px,4px);box-shadow:1px 1px 0 var(--ink)}
+.apkbar b{display:block;font-size:1.15rem;font-weight:800}.apkbar small{display:block;font-size:.85rem;opacity:.8}
+.apkico{flex:none;width:44px;height:44px;border-radius:14px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font-size:1.2rem;animation:apkbob 1.8s ease-in-out infinite}
+@keyframes apkbob{50%{transform:translateY(3px)}}
+@media (prefers-reduced-motion:reduce){.apkico{animation:none}}

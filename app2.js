@@ -17,7 +17,7 @@ function lineSVG(c){const W=520,H=300,L=40,B=52,T=18,cols=['#10261f','#ee6c4d'];
 function chartHTML(c){if(!c)return '';if(c.kind==='table')return `<table class="t">${c.rows.map((r,i)=>`<tr>${r.map(x=>i?`<td>${esc(x)}</td>`:`<th>${esc(x)}</th>`).join('')}</tr>`).join('')}</table>`;if(c.kind==='bar')return barSVG(c);if(c.kind==='line')return lineSVG(c);if(c.kind==='process')return `<div class="proc">${c.steps.map((s,i)=>`<div><b>${i+1}</b><span class="en" style="font-size:15px">${esc(s)}</span></div>`).join('')}</div>`;return '';}
 /* ----- helpers for views ----- */
 function ring(p,label,c){return `<div class="ring" style="--p:${p||0};--c:${c}"><b>${p==null?'–':p+'%'}</b></div><small>${label}</small>`;}
-function view(h){return `<div class="view">${h}</div>`;}
+const APKBAR=`<a class="apkbar" href="/khotwa-ielts.apk" download="khotwa-ielts.apk"><span class="apkico" aria-hidden="true">&#9660;</span><span><b>Get the Android app</b><small>Native, works offline &middot; APK, 8.4 MB</small></span></a>`;function view(h){return `<div class="view">${(route==='home'||route==='test')?APKBAR:''}${h}</div>`;}
 function headline(k,t,s=''){return `${eyebrow(k)}<h1>${t}</h1>${s?`<p class="mute">${s}</p>`:''}`;}
 /* ----- home ----- */
 function home(){const plan=genPlan(),d=curDay(plan),tasks=plan[d-1],p=S.placement,st=streak();
