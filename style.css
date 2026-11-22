@@ -112,3 +112,5 @@ footer{padding:0 16px 150px;text-align:center;color:var(--mute);font-size:13px}
 
 .mk{display:inline-block;padding:0 8px;border-radius:99px;border:2px solid var(--ink);font-size:12px;line-height:1.5;background:#fff}.mk.ok{background:#c9f0b4}.mk.no{background:#fbd0c8}
 .task.done .chk::after{content:'';width:8px;height:14px;border:solid #fff;border-width:0 3px 3px 0;transform:rotate(45deg) translate(-1px,-1px)}
+.grid>*{min-width:0}.grid small{overflow-wrap:anywhere}.num{font-size:clamp(30px,11vw,44px)}
+@media(max-width:360px){.g3{gap:8px}.g3 .tile{padding:10px 6px}}
