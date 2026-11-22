@@ -21,3 +21,4 @@ adb exec-out screencap -p > shots/99-rotated.png
 adb shell settings put system user_rotation 0
 adb logcat -d -s AndroidRuntime:E > shots/crash.txt
 cat shots/crash.txt | head -60
+echo "shots done"
