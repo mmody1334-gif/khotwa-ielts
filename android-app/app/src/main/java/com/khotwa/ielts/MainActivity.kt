@@ -51,6 +51,7 @@ class MainActivity : ComponentActivity() {
         val nav = Nav()
         intent.getStringExtra("lang")?.let { if (it == "ar" || it == "en") store.lang = it }
         I18n.ar = store.lang == "ar"
+        if (intent.hasExtra("plstep")) store.putMap("plc", "step", intent.getIntExtra("plstep", 0))
         intent.getStringExtra("route")?.let { if (it != "home") nav.stack.add(it) }
         tts = TextToSpeech(this) { st ->
             if (st == TextToSpeech.SUCCESS) {
@@ -118,7 +119,7 @@ fun Page(content: @Composable ColumnScope.() -> Unit) {
 fun Route(route: String, st: Store, nav: Nav, act: MainActivity) {
     val p = route.split(":")
     // Exam screens are in English, so they keep left-to-right layout even in the Arabic interface.
-    val ltr = p[0] in listOf("quiz", "paper", "write", "speak", "results", "words")
+    val ltr = p[0] in listOf("quiz", "placement", "paper", "write", "speak", "results", "words")
     CompositionLocalProvider(LocalLayoutDirection provides if (I18n.ar && !ltr) LayoutDirection.Rtl else LayoutDirection.Ltr) { RouteBody(p, st, nav, act) }
 }
 
@@ -136,7 +137,8 @@ fun RouteBody(p: List<String>, st: Store, nav: Nav, act: MainActivity) {
         "progress" -> ProgressScreen(st, nav)
         "about" -> AboutScreen(nav)
         "settings" -> SettingsScreen(st, nav)
-        "quiz" -> QuizScreen(p[1], p.getOrElse(2) { "" }, st, nav)
+        "placement" -> PlacementScreen(st, nav, act)
+        "quiz" -> if (p.getOrNull(1) == "placement") PlacementScreen(st, nav, act) else QuizScreen(p[1], p.getOrElse(2) { "" }, st, nav)
         "paper" -> PaperScreen(p[1][0], p[2], st, nav, act)
         "write" -> WritingScreen(p[1], st, nav)
         "speak" -> SpeakingScreen(p[1], st, nav)

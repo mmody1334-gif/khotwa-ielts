@@ -47,6 +47,8 @@ object Content {
     var writing = listOf<Writing>()
     var speaking = listOf<Speaking>()
     var vocab = listOf<Vocab>()
+    var placeR: Section? = null
+    var placeL: Section? = null
     private var loaded = false
 
     private fun sections(arr: JSONArray, kind: Char): List<Section> = (0 until arr.length()).map { i ->
@@ -108,6 +110,10 @@ object Content {
                 Vocab(b.optInt("id"), b.optString("w"), b.optString("def"), b.optString("ex"))
             }
         }
+        o.optJSONObject("placement")?.let { p ->
+            p.optJSONObject("reading")?.let { placeR = sections(JSONArray().put(it), 'R').first() }
+            p.optJSONObject("listening")?.let { placeL = sections(JSONArray().put(it), 'L').first() }
+        }
         loaded = true
     }
     fun section(id: String) = (reading + listening).first { it.id == id }
@@ -168,6 +174,9 @@ class Store(private val ctx: Context) {
     fun mapInt(k: String, key: String, d: Int = 0) = map(k).optInt(key, d)
     fun putMap(k: String, key: String, v: Any) { val m = map(k); m.put(key, v); root.put(k, m); save() }
     fun mapStr(k: String, key: String) = map(k).optString(key, "")
+    fun mapDouble(k: String, key: String, d: Double = 0.0) = map(k).optDouble(key, d)
+    /** Clears the saved parts of the placement test so it starts again. */
+    fun resetPlacement() { root.remove("plc"); save() }
 
     fun stat(group: String, key: String): Pair<Int, Int> { val o = map(group).optJSONObject(key); return (o?.optInt("c") ?: 0) to (o?.optInt("t") ?: 0) }
     fun addStat(group: String, key: String, c: Int, t: Int) {
