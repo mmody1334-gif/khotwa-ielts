@@ -28,6 +28,7 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.io.File
+import kotlinx.coroutines.delay
 
 val seriesColors = listOf(Green, Mustard, Coral, Plum)
 
@@ -116,6 +117,7 @@ fun WritingScreen(id: String, st: Store, nav: Nav) {
     val w = items[tab]
     var text by remember(w.id) { mutableStateOf(st.mapStr("draft", w.id)) }
     var report by remember(w.id) { mutableStateOf("") }
+    var scored by remember(w.id) { mutableStateOf<Double?>(null) }
     var model by remember(w.id) { mutableStateOf(false) }
     var run by remember { mutableStateOf(false) }
     val left = rememberCountdown((if (mock) 60 else w.minutes) * 60, run) { run = false }
@@ -154,6 +156,19 @@ fun WritingScreen(id: String, st: Store, nav: Nav) {
                 NButton(tr("Check text", "افحص النص"), bg = Sky) { report = analyse(text) }
             }
             if (report.isNotEmpty()) NCard { Text(report, style = Body.copy(fontSize = 14.sp)) }
+            NCard(bg = Paper) {
+                Text(tr("Finished? Estimate my level", "انتهيت؟ قدّر مستواي"), style = H3)
+                Text(tr("Uses length, sentences, linking and word variety, limited by your grammar level. It cannot judge your ideas.", "يعتمد على الطول والجمل وأدوات الربط وتنوّع الكلمات، ومحدود بمستوى قواعدك. لا يقيّم أفكارك."), style = Small)
+                Spacer(Modifier.height(6.dp))
+                if (scored == null) NButton(tr("Estimate and update my level", "قدّر وحدّث مستواي"), bg = Lime, enabled = count >= 40) {
+                    st.putMap("draft", w.id, text)
+                    val e = writingLevel(text, w.min, level(st, "foundation"), 1.5)
+                    st.setEst("writing", half(level(st, "writing") * 0.7 + e * 0.3).coerceIn(3.0, 9.0))
+                    if (count >= w.min && !st.has("wdone", w.id)) { st.add("wdone", w.id); st.bump("wn", w.id) }
+                    st.addHistory(tr("Writing: ", "كتابة: ") + w.title, count, w.min, null)
+                    scored = e
+                } else Text(tr("This text: about ${scored}. Your writing level is now ${level(st, "writing")}.", "هذا النص: حوالي ${scored}. مستواك في الكتابة الآن ${level(st, "writing")}."), style = Label)
+            }
             if (w.model != null) {
                 NButton(if (model) tr("Hide model answer", "أخفِ الإجابة النموذجية") else tr("Show model answer", "اعرض الإجابة النموذجية"), bg = Mustard) { model = !model }
                 if (model) NCard(bg = Paper) { Text(w.model, style = Body) ; Text(tr("A model shows one way to answer, not the only way.", "النموذج طريقة واحدة للإجابة وليس الطريقة الوحيدة."), style = Small) }
@@ -198,6 +213,7 @@ fun SpeakingScreen(id: String, st: Store, nav: Nav) {
                         Spacer(Modifier.width(10.dp)); if (prep) TimerPill(left)
                     }
                     Text(tr("Then speak for 1 to 2 minutes.", "ثم تكلّم من دقيقة إلى دقيقتين."), style = Small)
+                    MeasureSpeech(st, rec == null)
                 }
                 else -> { Text(tr("Give reasons and examples.", "قدّم أسبابًا وأمثلة."), style = Small); for (q in sp.p3) NCard { Text(q, style = Body) } }
             }
@@ -225,5 +241,40 @@ fun SpeakingScreen(id: String, st: Store, nav: Nav) {
                 if (part < 3) NButton(tr("Next part", "الجزء التالي")) { part++ } else NButton(tr("Finish", "إنهاء"), bg = Lime) { st.bump("spn", sp.id); st.addHistory(if (mock) tr("Speaking mock", "محاكاة المحادثة") else tr("Speaking: ", "محادثة: ") + sp.topic, 0, 0, null); nav.back() }
             }
         }
+    }
+}
+
+
+/** Part 2 answer measured with speech recognition; updates the speaking level a little each time. */
+@Composable
+fun MeasureSpeech(st: Store, enabled: Boolean) {
+    val ctx = LocalContext.current
+    val cap = remember { SpeechCapture(ctx) }
+    var tick by remember { mutableStateOf(0) }
+    var result by remember { mutableStateOf<String?>(null) }
+    DisposableEffect(Unit) { onDispose { cap.stop() } }
+    fun score() {
+        cap.stop()
+        val words = textStats(cap.text).words
+        if (words < 20) { result = tr("Too little speech was heard to measure. Try again closer to the phone.", "الكلام المسموع قليل جدًا للقياس. جرّب مرة أخرى قريبًا من الهاتف."); return }
+        val e = speakingLevel(cap.text, cap.seconds, level(st, "foundation"), 1, 1)
+        st.setEst("speaking", half(level(st, "speaking") * 0.7 + e * 0.3).coerceIn(3.0, 9.0))
+        result = tr("${words * 60 / maxOf(1, cap.seconds)} words a minute, about $e. Your speaking level is now ${level(st, "speaking")}.",
+            "${words * 60 / maxOf(1, cap.seconds)} كلمة في الدقيقة، حوالي $e. مستواك في المحادثة الآن ${level(st, "speaking")}.")
+    }
+    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) { result = null; cap.start() } }
+    LaunchedEffect(cap.running) { while (cap.running) { delay(500); tick++; if (cap.seconds >= 120) score() } }
+    NCard(bg = Sky) {
+        Text(tr("Speak and measure", "تكلّم وقِس مستواك"), style = H3)
+        Text(tr("The phone writes what you say and measures speed and vocabulary. It cannot judge pronunciation like an examiner.", "الهاتف يكتب ما تقوله ويقيس السرعة والمفردات، ولا يقيّم النطق مثل الممتحن."), style = Small.copy(color = Ink))
+        Spacer(Modifier.height(6.dp))
+        if (!cap.running) NButton(tr("Start", "ابدأ"), bg = Lime, enabled = enabled) {
+            if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) { result = null; cap.start() } else perm.launch(Manifest.permission.RECORD_AUDIO)
+        } else {
+            Row { TimerPill(maxOf(0, 120 - cap.seconds + tick * 0)); Spacer(Modifier.width(8.dp)); NButton(tr("Finish", "إنهاء"), bg = Coral) { score() } }
+            Text((cap.text + " " + cap.partial).trim().ifBlank { tr("Listening...", "يستمع...") }, style = EnText.copy(fontSize = 14.sp))
+        }
+        if (cap.error == "unavailable") Text(tr("Speech recognition is not available on this phone.", "التعرّف على الكلام غير متاح في هذا الهاتف."), style = Small.copy(color = Ink))
+        result?.let { Text(it, style = Label) }
     }
 }
