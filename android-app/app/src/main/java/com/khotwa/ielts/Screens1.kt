@@ -150,7 +150,7 @@ fun PracticeScreen(st: Store, nav: Nav) {
             Text("Reading passages", style = H2)
             for (s in Content.reading) NCard(onClick = { nav.go("paper:R:${s.id}") }) { Text(s.title, style = H3); Text("${s.sub}  ·  20 minutes", style = Small) }
             Text("Listening sections", style = H2)
-            for (s in Content.listening) NCard(onClick = { nav.go("paper:L:${s.id}") }) { Text(s.title, style = H3); Text("Section ${s.sec}  ·  untimed", style = Small) }
+            for (s in Content.listening) NCard(onClick = { nav.go("paper:L:${s.id}") }) { Text(s.title, style = H3); Text("Untimed", style = Small) }
             Text("Writing", style = H2)
             for (w in Content.writing.filter { it.type == st.type || it.type == "Both" }) NCard(onClick = { nav.go("write:${w.id}") }) { Text("Task ${w.task}: ${w.title}", style = H3); Text("${w.minutes} min, at least ${w.min} words", style = Small) }
             Text("Speaking", style = H2)
