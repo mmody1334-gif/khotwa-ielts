@@ -1,0 +1,7 @@
+{
+  "appId": "com.khotwa.ielts",
+  "appName": "Khotwa IELTS",
+  "webDir": "www",
+  "server": { "androidScheme": "https" },
+  "android": { "allowMixedContent": false }
+}
