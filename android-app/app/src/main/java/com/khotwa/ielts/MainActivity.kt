@@ -117,6 +117,13 @@ fun Page(content: @Composable ColumnScope.() -> Unit) {
 @Composable
 fun Route(route: String, st: Store, nav: Nav, act: MainActivity) {
     val p = route.split(":")
+    // Exam screens are in English, so they keep left-to-right layout even in the Arabic interface.
+    val ltr = p[0] in listOf("quiz", "paper", "write", "speak", "results", "words")
+    CompositionLocalProvider(LocalLayoutDirection provides if (I18n.ar && !ltr) LayoutDirection.Rtl else LayoutDirection.Ltr) { RouteBody(p, st, nav, act) }
+}
+
+@Composable
+fun RouteBody(p: List<String>, st: Store, nav: Nav, act: MainActivity) {
     when (p[0]) {
         "home" -> HomeScreen(st, nav)
         "plan" -> PlanScreen(st, nav)

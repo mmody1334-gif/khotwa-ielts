@@ -4,6 +4,8 @@ import android.content.Intent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -56,7 +58,7 @@ fun HomeScreen(st: Store, nav: Nav) {
         Spacer(Modifier.height(8.dp))
         Text("Khotwa", style = H1)
         Text(tr("A personal IELTS program that adapts to your results.", "برنامج آيلتس شخصي يتكيّف مع نتائجك."), style = Body)
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Tag(typeName(st.type), Lime); Tag(tr("Goal ", "الهدف ") + st.goal, Mustard); Tag(tr("${st.minutes} min", "${st.minutes} دقيقة"), Sky); Tag(tr("Streak ", "متتالية ") + st.streak(), Coral)
         }
         if (!st.placed) {
@@ -97,12 +99,12 @@ fun ProgramScreen(st: Store, nav: Nav) {
             if (!st.placed) {
                 NCard(bg = Lime, onClick = { nav.go("quiz:placement") }) {
                     Text(tr("Take the placement test first", "ابدأ باختبار تحديد المستوى أولًا"), style = H2)
-                    Text(tr("Your program is built from your level in each skill and your target band.", "يُبنى برنامجك من مستواك في كل مهارة والدرجة المستهدفة."), style = Body)
+                    Text(tr("Your program is built from your level in each skill and your target band. Until then you see a 4-week starter plan.", "يُبنى برنامجك من مستواك في كل مهارة والدرجة المستهدفة. حتى ذلك الحين تظهر خطة بداية لمدة 4 أسابيع."), style = Body)
                 }
             }
             NCard(bg = Lime) {
                 Text(tr("Estimated level", "المستوى التقريبي"), style = H3)
-                Text("${pr.current}  →  ${pr.target}", style = H1.copy(fontSize = 40.sp, lineHeight = 44.sp))
+                Text("${pr.current}  ${if (I18n.ar) "←" else "→"}  ${pr.target}", style = H1.copy(fontSize = 40.sp, lineHeight = 44.sp))
                 if (pr.gap <= 0.0) {
                     Text(tr("You are at or above your target estimate. The program keeps you exam-ready for 4 weeks. You can raise the target in Settings.",
                         "مستواك التقريبي عند هدفك أو أعلى. البرنامج يحافظ على جاهزيتك 4 أسابيع، ويمكنك رفع الهدف من الإعدادات."), style = Body)
@@ -224,7 +226,7 @@ fun LessonsScreen(st: Store, nav: Nav) {
                         Text(l.titleL(), style = H3, modifier = Modifier.weight(1f))
                         if (st.has("ldone", l.id)) Tag(tr("Done", "تم"), Lime)
                     }
-                    Text(l.subL(), style = Small); Text("${skillName(l.skill)}  ·  ${l.time}", style = Small)
+                    Text(l.subL(), style = Small); Text("${skillName(l.skill)}  ·  ${timeL(l.time)}", style = Small)
                 }
             }
         }
@@ -236,12 +238,12 @@ fun LessonScreen(id: String, st: Store, nav: Nav) {
     val l = Content.lessons.first { it.id == id }
     Screen(l.titleL(), { nav.back() }) {
         Page {
-            Row { Tag(skillName(l.skill)); Spacer(Modifier.width(8.dp)); Tag(l.time, Sky) }
+            Row { Tag(skillName(l.skill)); Spacer(Modifier.width(8.dp)); Tag(timeL(l.time), Sky) }
             Text(l.subL(), style = H3)
             Text(l.bodyL(), style = Body)
-            if (l.example.isNotBlank()) NCard(bg = Lime) { Text(tr("Example", "مثال"), style = H3); Text(l.example, style = Body) }
+            if (l.example.isNotBlank()) NCard(bg = Lime) { Text(tr("Example", "مثال"), style = H3); Text(l.example, style = EnText) }
             if (l.action.isNotBlank()) NCard(bg = Mustard) { Text(tr("Try this", "جرّب"), style = H3); Text(l.actionL(), style = Body) }
-            if (I18n.ar && l.bodyAr.isNotBlank()) NCard(bg = Paper) { Text("English", style = H3); Text(l.body, style = Body.copy(fontSize = 14.sp)) }
+            if (I18n.ar && l.bodyAr.isNotBlank()) NCard(bg = Paper) { Text("English", style = H3); Text(l.body, style = EnText.copy(fontSize = 14.sp)) }
             val done = st.has("ldone", l.id)
             NButton(if (done) tr("Marked done ✓", "تم ✓") else tr("Mark as done", "علّم كمنتهي"), bg = if (done) Card else Lime) { st.toggle("ldone", l.id); if (st.has("ldone", l.id)) st.addDay() }
         }

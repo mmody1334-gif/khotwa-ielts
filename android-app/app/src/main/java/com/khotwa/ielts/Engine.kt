@@ -109,7 +109,7 @@ fun program(st: Store): Program {
     var h = 0.0; var b = cur
     while (b < tgt - 0.01) { h += hoursForHalfBand(b); b += 0.5 }
     val perWeek = st.minutes / 60.0 * 6
-    val days = if (h == 0.0) 28 else (ceil(h / perWeek) * 7).toInt().coerceIn(28, 364)
+    val days = if (h == 0.0 || !st.placed) 28 else (ceil(h / perWeek) * 7).toInt().coerceIn(28, 364)
     return Program(cur, tgt, days, h)
 }
 

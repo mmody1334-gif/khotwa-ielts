@@ -13,6 +13,11 @@ object I18n { var ar by mutableStateOf(false) }
 /** Picks the English or Arabic text for the interface. Exam content stays in English. */
 fun tr(en: String, ar: String): String = if (I18n.ar) ar else en
 
+/** English exam text keeps left-to-right layout inside the Arabic interface. */
+val EnText get() = Body.copy(textDirection = androidx.compose.ui.text.style.TextDirection.Ltr)
+
+fun timeL(t: String) = if (I18n.ar) t.replace(" minutes", " دقائق").replace(" minute", " دقيقة") else t
+
 class Q(val t: String, val q: String, val a: Int, val accepted: List<String>, val w: String, val o: List<String>, val n: Int)
 class Group(val ins: String, val opts: List<String>, val form: String?, val qs: List<Q>)
 class Section(
