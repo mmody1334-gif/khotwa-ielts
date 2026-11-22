@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
@@ -93,16 +94,17 @@ private val LINKS = listOf("however", "although", "whereas", "while", "therefore
 
 fun analyse(text: String): String {
     val words = Regex("[A-Za-z']+").findAll(text).map { it.value.lowercase() }.toList()
-    if (words.isEmpty()) return "Nothing written yet."
+    if (words.isEmpty()) return tr("Nothing written yet.", "لم تكتب شيئًا بعد.")
     val sents = text.split(Regex("[.!?]+")).count { it.isNotBlank() }
     val paras = text.split(Regex("\n\\s*\n")).count { it.isNotBlank() }
     val low = text.lowercase()
     val links = LINKS.filter { low.contains(it) }
     val rep = words.filter { it.length > 4 }.groupingBy { it }.eachCount().filter { it.value >= 4 }.keys
-    return "Words: ${words.size}. Sentences: $sents (average ${words.size / maxOf(1, sents)} words). Paragraphs: $paras.\n" +
-        "Linking words used: ${if (links.isEmpty()) "none found" else links.joinToString(", ")}.\n" +
-        (if (rep.isNotEmpty()) "Repeated often: ${rep.joinToString(", ")}. Try synonyms.\n" else "") +
-        "This is a simple check. It cannot judge ideas, grammar or give a band."
+    return tr("Words: ${words.size}. Sentences: $sents (average ${words.size / maxOf(1, sents)} words). Paragraphs: $paras.\n", "الكلمات: ${words.size}. الجمل: $sents (متوسط ${words.size / maxOf(1, sents)} كلمة). الفقرات: $paras.\n") +
+        tr("Linking words used: ", "أدوات الربط: ") + (if (links.isEmpty()) tr("none found", "لا يوجد") else links.joinToString(", ")) + ".\n" +
+        (if (rep.isNotEmpty()) tr("Repeated often: ", "تكررت كثيرًا: ") + rep.joinToString(", ") + tr(". Try synonyms.\n", ". جرّب مرادفات.\n") else "") +
+        (if (paras < 4) tr("Task 2 usually needs 4 or 5 paragraphs.\n", "المهمة 2 تحتاج عادة 4 أو 5 فقرات.\n") else "") +
+        tr("This is a simple check. It cannot judge ideas, grammar or give a band.", "هذا فحص بسيط لا يقيّم الأفكار أو القواعد ولا يعطي درجة.")
 }
 
 @Composable
@@ -118,7 +120,21 @@ fun WritingScreen(id: String, st: Store, nav: Nav) {
     var run by remember { mutableStateOf(false) }
     val left = rememberCountdown((if (mock) 60 else w.minutes) * 60, run) { run = false }
     val count = Regex("[A-Za-z0-9']+").findAll(text).count()
-    Screen(if (mock) "Writing mock" else "Writing", { st.putMap("draft", w.id, text); nav.back() }, { TimerPill(left) }) {
+    // Autosave: a short pause after typing, when leaving the screen, and on system back.
+    LaunchedEffect(w.id, text) {
+        kotlinx.coroutines.delay(800)
+        if (text != st.mapStr("draft", w.id)) st.putMap("draft", w.id, text)
+    }
+    val latest by rememberUpdatedState(text)
+    val wid by rememberUpdatedState(w.id)
+    DisposableEffect(Unit) { onDispose { if (latest != st.mapStr("draft", wid)) st.putMap("draft", wid, latest) } }
+    fun leave() {
+        st.putMap("draft", w.id, text)
+        if (count >= w.min && !st.has("wdone", w.id)) { st.add("wdone", w.id); st.bump("wn", w.id) }
+        nav.back()
+    }
+    BackHandler { leave() }
+    Screen(if (mock) tr("Writing mock", "محاكاة الكتابة") else tr("Writing", "الكتابة"), { leave() }, { TimerPill(left) }) {
         Page {
             if (mock) Row { for ((k, x) in items.withIndex()) Chip("Task ${x.task}", tab == k) { st.putMap("draft", w.id, text); tab = k } }
             Text(w.title, style = H2)
@@ -126,21 +142,21 @@ fun WritingScreen(id: String, st: Store, nav: Nav) {
             NCard(bg = Paper) { Text(w.prompt, style = Body) }
             w.chart?.let { ChartView(it) }
             if (w.tips.isNotEmpty()) NCard(bg = Lime) { Text("Tips", style = H3); for (t in w.tips) Text("• $t", style = Body.copy(fontSize = 14.sp)) }
-            NButton(if (run) "Pause timer" else "Start timer", bg = Card) { run = !run }
+            NButton(if (run) tr("Pause timer", "أوقف المؤقت") else tr("Start timer", "ابدأ المؤقت"), bg = Card) { run = !run }
             BasicTextField(
                 text, { text = it }, Modifier.fillMaxWidth().heightIn(min = 220.dp).background(Card, RoundedCornerShape(12.dp)).border(2.dp, Ink, RoundedCornerShape(12.dp)).padding(12.dp),
                 textStyle = Body, cursorBrush = SolidColor(Ink)
             )
-            Text("$count words" + if (count < w.min) "  (aim for ${w.min}+)" else "  ✓", style = Label.copy(color = if (count >= w.min) Green else Coral))
+            Text(tr("$count words", "$count كلمة") + (if (count < w.min) tr("  (aim for ${w.min}+)", "  (الهدف ${w.min}+)") else "  ✓") + tr("  ·  saved automatically", "  ·  يُحفظ تلقائيًا"), style = Label.copy(color = if (count >= w.min) Green else Coral))
             Row {
-                NButton("Save draft", bg = Lime) { st.putMap("draft", w.id, text); st.addDay() }
+                NButton(tr("Save draft", "حفظ المسودة"), bg = Lime) { st.putMap("draft", w.id, text); st.addDay() }
                 Spacer(Modifier.width(8.dp))
-                NButton("Check text", bg = Sky) { report = analyse(text) }
+                NButton(tr("Check text", "افحص النص"), bg = Sky) { report = analyse(text) }
             }
             if (report.isNotEmpty()) NCard { Text(report, style = Body.copy(fontSize = 14.sp)) }
             if (w.model != null) {
-                NButton(if (model) "Hide model answer" else "Show model answer", bg = Mustard) { model = !model }
-                if (model) NCard(bg = Paper) { Text(w.model, style = Body) ; Text("A model shows one way to answer, not the only way.", style = Small) }
+                NButton(if (model) tr("Hide model answer", "أخفِ الإجابة النموذجية") else tr("Show model answer", "اعرض الإجابة النموذجية"), bg = Mustard) { model = !model }
+                if (model) NCard(bg = Paper) { Text(w.model, style = Body) ; Text(tr("A model shows one way to answer, not the only way.", "النموذج طريقة واحدة للإجابة وليس الطريقة الوحيدة."), style = Small) }
             }
         }
     }
@@ -164,49 +180,49 @@ fun SpeakingScreen(id: String, st: Store, nav: Nav) {
             val r = if (Build.VERSION.SDK_INT >= 31) MediaRecorder(ctx) else @Suppress("DEPRECATION") MediaRecorder()
             r.setAudioSource(MediaRecorder.AudioSource.MIC); r.setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
             r.setAudioEncoder(MediaRecorder.AudioEncoder.AAC); r.setOutputFile(file.absolutePath); r.prepare(); r.start()
-            rec = r; msg = "Recording..."
-        } catch (e: Exception) { msg = "Could not start recording on this device." }
+            rec = r; msg = tr("Recording...", "جارٍ التسجيل...")
+        } catch (e: Exception) { msg = tr("Could not start recording on this device.", "تعذّر بدء التسجيل على هذا الجهاز.") }
     }
-    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startRec() else msg = "Microphone permission was denied. You can still practise aloud." }
+    val perm = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { ok -> if (ok) startRec() else msg = tr("Microphone permission was denied. You can still practise aloud.", "تم رفض إذن الميكروفون. يمكنك التدرّب بصوت عالٍ.") }
     val left = rememberCountdown(60, prep) { prep = false }
-    Screen(if (mock) "Speaking mock" else "Speaking", { nav.back() }) {
+    Screen(if (mock) tr("Speaking mock", "محاكاة المحادثة") else tr("Speaking", "المحادثة"), { nav.back() }) {
         Page {
-            Row { for (p in 1..3) Chip("Part $p", part == p) { part = p } }
+            Row { for (p in 1..3) Chip(tr("Part $p", "الجزء $p"), part == p) { part = p } }
             Text(sp.topic, style = H2)
             when (part) {
-                1 -> { Text("Answer each question in 2 to 4 sentences.", style = Small); for (q in sp.p1) NCard { Text(q, style = Body) } }
+                1 -> { Text(tr("Answer each question in 2 to 4 sentences.", "أجب عن كل سؤال في 2 إلى 4 جمل."), style = Small); for (q in sp.p1) NCard { Text(q, style = Body) } }
                 2 -> {
                     NCard(bg = Lime) { Text(sp.cue, style = H3); for (b in sp.bullets) Text("• $b", style = Body) }
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        NButton(if (prep) "Preparing..." else "1 minute to prepare", bg = Mustard) { prep = true }
+                        NButton(if (prep) tr("Preparing...", "تحضير...") else tr("1 minute to prepare", "دقيقة للتحضير"), bg = Mustard) { prep = true }
                         Spacer(Modifier.width(10.dp)); if (prep) TimerPill(left)
                     }
-                    Text("Then speak for 1 to 2 minutes.", style = Small)
+                    Text(tr("Then speak for 1 to 2 minutes.", "ثم تكلّم من دقيقة إلى دقيقتين."), style = Small)
                 }
-                else -> { Text("Give reasons and examples.", style = Small); for (q in sp.p3) NCard { Text(q, style = Body) } }
+                else -> { Text(tr("Give reasons and examples.", "قدّم أسبابًا وأمثلة."), style = Small); for (q in sp.p3) NCard { Text(q, style = Body) } }
             }
             NCard(bg = Paper) {
-                Text("Record yourself", style = H3)
+                Text(tr("Record yourself", "سجّل صوتك"), style = H3)
                 Spacer(Modifier.height(6.dp))
                 Row {
-                    if (rec == null) NButton("Record", bg = Coral) {
+                    if (rec == null) NButton(tr("Record", "سجّل"), bg = Coral) {
                         if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) startRec() else perm.launch(Manifest.permission.RECORD_AUDIO)
-                    } else NButton("Stop", bg = Coral) {
-                        try { rec?.stop(); hasRec = true; msg = "Saved on this device." } catch (e: Exception) { msg = "Recording was too short." }
+                    } else NButton(tr("Stop", "إيقاف"), bg = Coral) {
+                        try { rec?.stop(); hasRec = true; msg = tr("Saved on this device.", "حُفظ على جهازك.") } catch (e: Exception) { msg = tr("Recording was too short.", "التسجيل قصير جدًا.") }
                         rec?.release(); rec = null
                     }
                     Spacer(Modifier.width(8.dp))
-                    NButton(if (playing != null) "Stop playback" else "Play back", bg = Sky, enabled = hasRec && rec == null) {
+                    NButton(if (playing != null) tr("Stop playback", "أوقف التشغيل") else tr("Play back", "استمع"), bg = Sky, enabled = hasRec && rec == null) {
                         if (playing != null) { playing?.release(); playing = null } else {
-                            try { val m = MediaPlayer(); m.setDataSource(file.absolutePath); m.prepare(); m.setOnCompletionListener { it.release(); playing = null }; m.start(); playing = m } catch (e: Exception) { msg = "Could not play the recording." }
+                            try { val m = MediaPlayer(); m.setDataSource(file.absolutePath); m.prepare(); m.setOnCompletionListener { it.release(); playing = null }; m.start(); playing = m } catch (e: Exception) { msg = tr("Could not play the recording.", "تعذّر تشغيل التسجيل.") }
                         }
                     }
                 }
                 if (msg.isNotEmpty()) Text(msg, style = Small)
-                Text("The recording is not uploaded or scored. Listen for pauses, fillers and clear ideas.", style = Small)
+                Text(tr("The recording is not uploaded or scored. Listen for pauses, fillers and clear ideas.", "التسجيل لا يُرفع ولا يُقيَّم. استمع للتوقفات والكلمات الحشو ووضوح الأفكار."), style = Small)
             }
             Row {
-                if (part < 3) NButton("Next part") { part++ } else NButton("Finish", bg = Lime) { st.addHistory(if (mock) "Speaking mock" else "Speaking: ${sp.topic}", 0, 0, null); nav.back() }
+                if (part < 3) NButton(tr("Next part", "الجزء التالي")) { part++ } else NButton(tr("Finish", "إنهاء"), bg = Lime) { st.bump("spn", sp.id); st.addHistory(if (mock) tr("Speaking mock", "محاكاة المحادثة") else tr("Speaking: ", "محادثة: ") + sp.topic, 0, 0, null); nav.back() }
             }
         }
     }

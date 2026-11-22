@@ -108,7 +108,7 @@ fun Bar(frac: Float, color: Color = Green, modifier: Modifier = Modifier) {
 
 @Composable
 fun rememberCountdown(totalSec: Int, running: Boolean = true, onExpire: () -> Unit): Int {
-    var left by remember(totalSec) { mutableStateOf(totalSec) }
+    var left by androidx.compose.runtime.saveable.rememberSaveable(totalSec) { mutableStateOf(totalSec) }
     val cb by rememberUpdatedState(onExpire)
     LaunchedEffect(totalSec, running) {
         while (running && left > 0) { delay(1000); left-- ; if (left == 0) cb() }
@@ -130,7 +130,7 @@ fun Screen(title: String, onBack: (() -> Unit)?, trailing: @Composable () -> Uni
     Column(Modifier.fillMaxSize()) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
             if (onBack != null) {
-                Box(Modifier.padding(end = 10.dp).neo(Card, 12.dp, 2.dp).clickable { onBack() }.padding(horizontal = 12.dp, vertical = 6.dp)) { Text("←", style = H3) }
+                Box(Modifier.padding(end = 10.dp).neo(Card, 12.dp, 2.dp).clickable { onBack() }.padding(horizontal = 12.dp, vertical = 6.dp)) { Text(if (androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl) "→" else "←", style = H3) }
             }
             Text(title, style = H2, modifier = Modifier.weight(1f))
             trailing()
