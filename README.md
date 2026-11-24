@@ -17,3 +17,7 @@ Run locally: `python3 -m http.server` in this folder.
 - Arabic interface option in Settings (exam content stays in English).
 - 3 full mocks (Reading 40 + Listening 40 each), 11 reading passages, 14 listening sections, 98 bank questions, practice by question type.
 - Releases are signed with a fixed key from GitHub Secrets `KHOTWA_KEYSTORE_B64` and `KHOTWA_STORE_PASS`, so updates install over older versions.
+
+## Web app (v3, for iPhone and any browser)
+
+`index.html`, `core.js` and `ui.js` are a port of the Android app with the same features: 5-part placement test, adaptive program, Arabic option, 3 mocks, measured writing and speaking. Both apps read `shared/content.json`, so content changes go in one place. Backups move between the web app and the Android app. On iPhone: Safari, Share, Add to Home Screen.
