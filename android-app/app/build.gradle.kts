@@ -3,6 +3,8 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 android {
+    // The exam content lives in /shared so the web app and the Android app use the same file.
+    sourceSets { getByName("main") { assets.srcDir("../../shared") } }
     namespace = "com.khotwa.ielts"
     compileSdk = 34
     defaultConfig {

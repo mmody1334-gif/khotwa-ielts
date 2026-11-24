@@ -121,3 +121,14 @@ footer{padding:0 16px 150px;text-align:center;color:var(--mute);font-size:13px}
 .apkico{flex:none;width:44px;height:44px;border-radius:14px;background:var(--ink);color:var(--lime);display:grid;place-items:center;font-size:1.2rem;animation:apkbob 1.8s ease-in-out infinite}
 @keyframes apkbob{50%{transform:translateY(3px)}}
 @media (prefers-reduced-motion:reduce){.apkico{animation:none}}
+
+/* ---- v3: shared app with Android ---- */
+.view.still>*{animation:none}
+nav#tabs a.on,nav#tabs button.on{background:var(--lime);border-radius:20px}
+nav#tabs .menubtn2{border:0;background:none}
+.chips .chip{white-space:nowrap}
+table.t{border-collapse:collapse;width:100%;margin:12px 0;background:var(--card)}
+table.t td,table.t th{border:2px solid var(--ink);padding:6px 10px;text-align:left}
+.qblock .options{margin:10px 0 4px}
+[dir=rtl] .passage{border-radius:18px 0 0 18px}
+.tile h3+small,.tile h3+b{display:inline-block;margin-top:2px}
