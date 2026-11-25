@@ -1,0 +1,25 @@
+{
+ "files": {
+  "l1": "43d47b9ba613",
+  "l2": "d3c9726084c7",
+  "l3": "15e9ed13e146",
+  "l4": "aae4b5480b60",
+  "l5": "d4f69793ffd5",
+  "l6": "26fa54232160",
+  "l7": "c7ef539ecaea",
+  "l8": "a9e542ee4c32",
+  "l9": "e5ff6e43520e",
+  "l10": "6b1764ab16b0",
+  "l11": "0bb2b6f8d597",
+  "l12": "d85de7f04990",
+  "l13": "5fdc85639078",
+  "l14": "b3724c868331",
+  "pll": "282661af3054"
+ },
+ "voices": [
+  "en_GB-cori-medium",
+  "en_GB-alan-medium",
+  "en_GB-jenny_dioco-medium",
+  "en_GB-northern_english_male-medium"
+ ]
+}
