@@ -253,9 +253,9 @@ private fun PlSection(title: String, kind: Char, st: Store, nav: Nav, act: MainA
     var finished by remember { mutableStateOf(false) }
     var played by remember { mutableStateOf(false) }
     var speaking by remember { mutableStateOf(false) }
-    DisposableEffect(Unit) { onDispose { act.tts?.stop() } }
+    DisposableEffect(Unit) { onDispose { act.stopAudio() } }
     fun finish() {
-        if (finished) return; finished = true; act.tts?.stop()
+        if (finished) return; finished = true; act.stopAudio()
         var c = 0; var t = 0
         for (g in s.groups) for (q in g.qs) { t++; if (isCorrect(q, ans["${s.id}|${q.n}"])) c++ }
         if (kind == 'R') { st.putMap("plc", "rc", c); st.putMap("plc", "rt", t) } else { st.putMap("plc", "lc", c); st.putMap("plc", "lt", t) }
@@ -275,6 +275,7 @@ private fun PlSection(title: String, kind: Char, st: Store, nav: Nav, act: MainA
                     Text(tr("Read the questions first. The audio plays once, like the real test.", "اقرأ الأسئلة أولًا. التسجيل يُشغَّل مرة واحدة كما في الامتحان."), style = Label)
                     Spacer(Modifier.height(8.dp))
                     NButton(if (speaking) tr("Playing...", "يعمل...") else if (played) tr("Played", "تم التشغيل") else tr("Play audio", "شغّل الصوت"), bg = Lime, enabled = !speaking && !played) {
+                        if (act.playAsset(s.id)) { speaking = true; played = true; return@NButton }
                         val t = act.tts
                         if (t == null || !act.ttsReady) return@NButton
                         speaking = true; played = true
@@ -294,7 +295,7 @@ private fun PlSection(title: String, kind: Char, st: Store, nav: Nav, act: MainA
                     }
                 }
                 LaunchedEffect(speaking) {
-                    while (speaking) { delay(600); if (act.tts?.isSpeaking != true) { delay(600); if (act.tts?.isSpeaking != true) speaking = false } }
+                    while (speaking) { delay(600); if (!act.audioBusy()) { delay(600); if (!act.audioBusy()) speaking = false } }
                 }
             }
             for (g in s.groups) NCard {

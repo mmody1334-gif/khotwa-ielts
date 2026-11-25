@@ -156,6 +156,7 @@ fun WritingScreen(id: String, st: Store, nav: Nav) {
                 NButton(tr("Check text", "افحص النص"), bg = Sky) { report = analyse(text) }
             }
             if (report.isNotEmpty()) NCard { Text(report, style = Body.copy(fontSize = 14.sp)) }
+            AiFeedback("writing", w.prompt, text, w.task, w.min) { b -> st.setEst("writing", half(level(st, "writing") * 0.65 + b * 0.35).coerceIn(3.0, 9.0)) }
             NCard(bg = Paper) {
                 Text(tr("Finished? Estimate my level", "انتهيت؟ قدّر مستواي"), style = H3)
                 Text(tr("Uses length, sentences, linking and word variety, limited by your grammar level. It cannot judge your ideas.", "يعتمد على الطول والجمل وأدوات الربط وتنوّع الكلمات، ومحدود بمستوى قواعدك. لا يقيّم أفكارك."), style = Small)
@@ -213,7 +214,7 @@ fun SpeakingScreen(id: String, st: Store, nav: Nav) {
                         Spacer(Modifier.width(10.dp)); if (prep) TimerPill(left)
                     }
                     Text(tr("Then speak for 1 to 2 minutes.", "ثم تكلّم من دقيقة إلى دقيقتين."), style = Small)
-                    MeasureSpeech(st, rec == null)
+                    MeasureSpeech(st, rec == null, sp.cue + " You should say: " + sp.bullets.joinToString("; "))
                 }
                 else -> { Text(tr("Give reasons and examples.", "قدّم أسبابًا وأمثلة."), style = Small); for (q in sp.p3) NCard { Text(q, style = Body) } }
             }
@@ -247,7 +248,7 @@ fun SpeakingScreen(id: String, st: Store, nav: Nav) {
 
 /** Part 2 answer measured with speech recognition; updates the speaking level a little each time. */
 @Composable
-fun MeasureSpeech(st: Store, enabled: Boolean) {
+fun MeasureSpeech(st: Store, enabled: Boolean, cue: String = "") {
     val ctx = LocalContext.current
     val cap = remember { SpeechCapture(ctx) }
     var tick by remember { mutableStateOf(0) }
@@ -276,5 +277,6 @@ fun MeasureSpeech(st: Store, enabled: Boolean) {
         }
         if (cap.error == "unavailable") Text(tr("Speech recognition is not available on this phone.", "التعرّف على الكلام غير متاح في هذا الهاتف."), style = Small.copy(color = Ink))
         result?.let { Text(it, style = Label) }
+        if (!cap.running && textStats(cap.text).words >= 30) AiFeedback("speaking", cue, cap.text, 2, 0) { b -> st.setEst("speaking", half(level(st, "speaking") * 0.7 + b * 0.3).coerceIn(3.0, 9.0)) }
     }
 }

@@ -43,11 +43,27 @@ class MainActivity : ComponentActivity() {
     var tts: TextToSpeech? = null
     var ttsReady by mutableStateOf(false)
     var ttsEnglish by mutableStateOf(true)
+    var updateName by mutableStateOf<String?>(null)
+    private var player: android.media.MediaPlayer? = null
+    /** Plays the recorded mp3 for a listening section when the APK has one (shared/audio). Returns false to fall back to the device voice. */
+    fun playAsset(id: String): Boolean = try {
+        val fd = assets.openFd("audio/$id.mp3")
+        stopAudio()
+        player = android.media.MediaPlayer().apply {
+            setDataSource(fd.fileDescriptor, fd.startOffset, fd.length); fd.close()
+            setOnCompletionListener { mp -> if (player === mp) player = null; mp.release() }
+            prepare(); start()
+        }
+        true
+    } catch (e: Exception) { false }
+    fun stopAudio() { try { player?.stop(); player?.release() } catch (e: Exception) { }; player = null; tts?.stop() }
+    fun audioBusy(): Boolean = (try { player?.isPlaying == true } catch (e: Exception) { false }) || tts?.isSpeaking == true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Content.load(this)
         val store = Store(this)
+        Content.store = store
         val nav = Nav()
         intent.getStringExtra("lang")?.let { if (it == "ar" || it == "en") store.lang = it }
         I18n.ar = store.lang == "ar"
@@ -134,6 +150,8 @@ fun RouteBody(p: List<String>, st: Store, nav: Nav, act: MainActivity) {
         "lessons" -> LessonsScreen(st, nav)
         "lesson" -> if (Content.lessons.any { it.id == p.getOrElse(1) { "" } }) LessonScreen(p[1], st, nav) else LessonsScreen(st, nav)
         "mocks" -> MocksScreen(st, nav)
+        "review" -> ReviewScreen(st, nav)
+        "dict" -> DictScreen(st, nav, act)
         "ext" -> ExtScreen(p.getOrElse(1) { "" }, st, nav)
         "progress" -> ProgressScreen(st, nav)
         "about" -> AboutScreen(nav)

@@ -13,6 +13,7 @@ async function loadContent() {
   const d = r && r.ok ? await r.json() : await (await caches.match('/shared/content.json')).json();
   Object.assign(C, d);
   C.external = d.external || [];
+  try { const a = await fetch('/shared/audio/index.json', { cache: 'no-cache' }); C.audio = a.ok ? (await a.json()).files || {} : {}; } catch (e) { C.audio = {}; }
   C.placeR = d.placement && d.placement.reading; C.placeL = d.placement && d.placement.listening;
   for (const s of C.listening.concat(C.placeL ? [C.placeL] : [])) s.sub = s.ctx || '';
   for (const s of C.reading.concat(C.placeR ? [C.placeR] : [])) s.sub = s.topic || '';
@@ -103,8 +104,19 @@ function program() {
   const cur = currentOverall(), tgt = S.goal;
   let h = 0, b = cur; while (b < tgt - 0.01) { h += hoursForHalfBand(b); b += 0.5; }
   const perWeek = S.minutes / 60 * 6;
-  const days = (h === 0 || !S.placed) ? 28 : clamp(Math.ceil(h / perWeek) * 7, 28, 364);
-  return { current: cur, target: tgt, days, hours: h, weeks: Math.floor((days + 6) / 7), gap: Math.max(0, tgt - cur) };
+  let days = (h === 0 || !S.placed) ? 28 : clamp(Math.ceil(h / perWeek) * 7, 28, 364);
+  const out = { current: cur, target: tgt, hours: h, gap: Math.max(0, tgt - cur), exam: null };
+  // With an exam date the program ends the day before the exam. It also says what fits in that time.
+  const ex = R.exam ? R.exam - today() : null;
+  if (S.placed && ex != null && ex > 0) {
+    const start = S.start || today();
+    days = Math.max(7, R.exam - start);
+    const avail = ex / 7 * perWeek;
+    let reach = cur, used = 0; while (reach < 9 && used + hoursForHalfBand(reach) <= avail) { used += hoursForHalfBand(reach); reach += 0.5; }
+    out.exam = { daysLeft: ex, availHours: Math.round(avail), fits: avail >= h, reachable: reach, needMinutes: h > 0 ? Math.ceil(h * 60 / (ex / 7 * 6)) : 0 };
+  }
+  out.days = days; out.weeks = Math.floor((days + 6) / 7);
+  return out;
 }
 function phaseOf(day, total) { const f = (day - 1) / Math.max(1, total); return f < 0.3 ? 'BUILD' : f < 0.8 ? 'PRACTICE' : 'EXAM'; }
 const phaseName = p => ({ BUILD: tr('Build the basics', 'بناء الأساس'), PRACTICE: tr('Skill practice', 'تدريب المهارات'), EXAM: tr('Exam practice', 'محاكاة الامتحان') })[p];
@@ -119,7 +131,7 @@ const tcode = t => t.kind + '|' + t.id;
 const tparse = c => { const p = c.split('|'); return p.length === 2 ? T(p[0], p[1]) : null; };
 function troute(t) {
   return ({ read: 'paper/R/' + t.id, listen: 'paper/L/' + t.id, write: 'write/' + t.id, speak: 'speak/' + t.id, lesson: 'lesson/' + t.id, vocab: 'words',
-    drill: 'quiz/drill/' + t.id, check: 'quiz/check', ext: 'ext/' + t.id, mockR: 'paper/R/mock' + t.id, mockL: 'paper/L/mock' + t.id, mockW: 'write/mock', mockS: 'speak/mock' })[t.kind] || 'home';
+    drill: 'quiz/drill/' + t.id, check: 'quiz/check', ext: 'ext/' + t.id, review: 'review', dict: 'dict', mockR: 'paper/R/mock' + t.id, mockL: 'paper/L/mock' + t.id, mockW: 'write/mock', mockS: 'speak/mock' })[t.kind] || 'home';
 }
 function tlabel(t) {
   const sec = section(t.id);
@@ -132,6 +144,8 @@ function tlabel(t) {
     case 'vocab': return tr('Review 10 words', 'مراجعة 10 كلمات');
     case 'drill': return tr('Drill: ', 'تدريب: ') + skillName(t.id);
     case 'check': return tr('Checkpoint test (updates your plan)', 'اختبار متابعة (يحدّث خطتك)');
+    case 'review': return tr('Review your mistakes', 'راجع أخطاءك') + (mistakesDue().length ? ` (${mistakesDue().length})` : '');
+    case 'dict': return tr('Dictation: names, numbers and dates', 'إملاء: أسماء وأرقام وتواريخ');
     case 'ext': { const x = C.external.find(e => e.id === t.id); return tr('Full test online: ', 'اختبار كامل أونلاين: ') + (x ? x.title : t.id); }
     case 'mockR': return tr(`Mock ${t.id}: Reading, 60 min`, `محاكاة ${t.id}: القراءة، 60 دقيقة`);
     case 'mockL': return tr(`Mock ${t.id}: Listening`, `محاكاة ${t.id}: الاستماع`);
@@ -140,7 +154,7 @@ function tlabel(t) {
   }
   return t.kind;
 }
-function tskill(t) { return ({ ext: 'reading', read: 'reading', listen: 'listening', write: 'writing', speak: 'speaking', mockR: 'reading', mockL: 'listening', mockW: 'writing', mockS: 'speaking' })[t.kind] || (t.kind === 'drill' ? t.id : t.kind === 'lesson' ? ((C.lessons.find(x => x.id === t.id) || {}).skill || 'foundation') : 'foundation'); }
+function tskill(t) { return ({ dict: 'listening', ext: 'reading', read: 'reading', listen: 'listening', write: 'writing', speak: 'speaking', mockR: 'reading', mockL: 'listening', mockW: 'writing', mockS: 'speaking' })[t.kind] || (t.kind === 'drill' ? t.id : t.kind === 'lesson' ? ((C.lessons.find(x => x.id === t.id) || {}).skill || 'foundation') : 'foundation'); }
 
 function weights() {
   const t = S.goal, m = {};
@@ -156,14 +170,20 @@ function Picker() {
   const n = k => { const v = counters[k] || 0; counters[k] = v + 1; return v; };
   const rotate = (pool, key, done) => { if (!pool.length) return null; const sorted = pool.map((v, i) => [v, i]).sort((a, b) => done(a[0]) - done(b[0]) || a[1] - b[1]).map(x => x[0]); return sorted[n(key) % sorted.length]; };
   const lesson = sk => { const l = rotate(C.lessons.filter(x => x.skill === sk), 'les-' + sk, x => S.has('ldone', x.id) ? 1 : 0); return l ? T('lesson', l.id) : null; };
-  const sectionT = kind => { const s = rotate(kind === 'R' ? C.reading : C.listening, 'sec-' + kind, x => S.mapInt('secn', x.id)); return s ? T(kind === 'R' ? 'read' : 'listen', s.id) : null; };
+  const wt = weakType();
+  const sectionT = kind => {
+    let pool = kind === 'R' ? C.reading : C.listening;
+    // every other time, pick a passage that has your weakest question type
+    if (wt && n('weak-' + kind) % 2 === 0) { const f = pool.filter(s => s.groups.some(g => g.qs.some(q => q.t === wt.type))); if (f.length) pool = f; }
+    const s = rotate(pool, 'sec-' + kind, x => S.mapInt('secn', x.id)); return s ? T(kind === 'R' ? 'read' : 'listen', s.id) : null;
+  };
   const writing = task => { const w = rotate(C.writing.filter(x => x.task === task && (task === 2 || x.type === S.type || x.type === 'Both')), 'w' + task, x => S.mapInt('wn', x.id)); return w ? T('write', w.id) : null; };
   const speaking = () => { const s = rotate(C.speaking, 'sp', x => S.mapInt('spn', x.id)); return s ? T('speak', s.id) : null; };
   return {
     task(sk, ph) {
       const k = n('t-' + sk);
       if (sk === 'reading') return ph === 'BUILD' ? (k % 2 === 0 ? lesson('reading') : T('drill', 'reading')) : sectionT('R');
-      if (sk === 'listening') return ph === 'BUILD' ? (k % 2 === 0 ? lesson('listening') : T('drill', 'listening')) : sectionT('L');
+      if (sk === 'listening') return ph === 'BUILD' ? [lesson('listening'), T('drill', 'listening'), T('dict')][k % 3] : (k % 4 === 3 ? T('dict') : sectionT('L'));
       if (sk === 'writing') {
         if (ph === 'BUILD') return k % 2 === 0 ? lesson('writing') : writing(1);
         if (ph === 'PRACTICE') return level('writing') < 5.5 ? writing(k % 3 === 2 ? 2 : 1) : writing(k % 2 === 0 ? 2 : 1);
@@ -202,6 +222,7 @@ function generatePlan(total) {
       if (used.size >= Object.keys(credit).length) break;
     }
     if (slots >= 2 && d % 2 === 1 && !out.some(x => x.kind === 'vocab') && out.length < 4) out.push(T('vocab'));
+    if (d % 3 === 2 && out.length < 4) out.push(T('review'));
     days.push(out);
   }
   return days;
@@ -311,3 +332,63 @@ function recordExternal(id, r, l) {
   S.addHistory(x.title, (r || 0) + (l || 0), (r != null ? 40 : 0) + (l != null ? 40 : 0), null);
   S.replanFuture();
 }
+
+/* ---------------------------------------------------------------- weak spot */
+const QTYPE_NAMES = { tfng: 'True / False / Not Given', yn: 'Yes / No / Not Given', sel: 'Matching', mcq: 'Multiple choice', gap: 'Completion' };
+/** The question type with the lowest accuracy (at least 8 answers, under 75%). */
+function weakType() {
+  let best = null;
+  for (const t of Object.keys(QTYPE_NAMES)) { const [c, n] = S.stat('ty', t); if (n < 8) continue; const a = c / n; if (a < 0.75 && (!best || a < best.acc)) best = { type: t, acc: a, n }; }
+  return best;
+}
+
+/* ---------------------------------------------------------------- mistakes bank (spaced review) */
+const BOXES = [1, 3, 7, 14];
+/** Keys: 'b<bank id>' or 's<section id>|<question n>'. Value: 'box|due day'. */
+function addMistake(key) { S.putMap('mist', key, '0|' + (today() + 1)); }
+function mistakes() { return Object.entries(R.mist || {}).map(([k, v]) => { const [b, d] = String(v).split('|').map(Number); return { key: k, box: b || 0, due: d || 0 }; }); }
+const mistakesDue = () => mistakes().filter(m => m.due <= today());
+function reviewAnswer(key, ok) {
+  const m = mistakes().find(x => x.key === key); if (!m) return;
+  if (!ok) { S.putMap('mist', key, '0|' + (today() + 1)); return; }
+  const b = m.box + 1;
+  if (b >= 2) { delete R.mist[key]; save(); }      // right twice in a row: learned
+  else S.putMap('mist', key, b + '|' + (today() + BOXES[b]));
+}
+/** Finds the question behind a mistake key, with its group and section. */
+function mistakeItem(key) {
+  if (key[0] === 'b') { const q = C.bank.find(x => String(x.id) === key.slice(1)); return q ? { bank: q } : null; }
+  const [sid, n] = key.slice(1).split('|');
+  const all = C.reading.concat(C.listening, C.placeR ? [C.placeR] : [], C.placeL ? [C.placeL] : []);
+  const s = all.find(x => x.id === sid); if (!s) return null;
+  for (const g of s.groups) for (const q of g.qs) if (String(q.n) === n) return { sec: s, g, q };
+  return null;
+}
+
+/* ---------------------------------------------------------------- dictation (listening Section 1 skills) */
+const DNAMES = ['Mansour', 'Harrison', 'Thompson', 'Al Rawahi', 'Fitzgerald', 'Okonkwo', 'Whitaker', 'Haddad', 'Pemberton', 'Kowalski', 'Baxter', 'Nakamura', 'Ellsworth', 'Gallagher', 'Al Balushi', 'Henshaw'];
+const DSTREETS = ['Wellington Road', 'Kingsley Avenue', 'Marsh Lane', 'Beacon Street', 'Hollybush Close', 'Oakfield Drive'];
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+const ONES = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen', 'seventeen', 'eighteen', 'nineteen'];
+const TENS = ['', '', 'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety'];
+const words = n => n < 20 ? ONES[n] : n < 100 ? TENS[Math.floor(n / 10)] + (n % 10 ? '-' + ONES[n % 10] : '') : ONES[Math.floor(n / 100)] + ' hundred' + (n % 100 ? ' and ' + words(n % 100) : '');
+const ORD = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth', 'eleventh', 'twelfth', 'thirteenth', 'fourteenth', 'fifteenth', 'sixteenth', 'seventeenth', 'eighteenth', 'nineteenth', 'twentieth'];
+const ordinal = n => n <= 20 ? ORD[n] : n === 30 ? 'thirtieth' : (n < 30 ? 'twenty-' : 'thirty-') + ORD[n % 10];
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const pick = a => a[Math.floor(Math.random() * a.length)];
+/** One dictation item: what the voice says, what the learner sees as a prompt, and the accepted answers. */
+function dictItem(kind) {
+  switch (kind) {
+    case 'name': { const n = pick(DNAMES); const letters = n.replace(/ /g, '').toUpperCase().split('').join(', '); return { say: `My surname is ${n}. That's ${letters}.`, prompt: 'Surname:', ans: [n] }; }
+    case 'phone': { const d = '07' + Array.from({ length: 9 }, () => ri(0, 9)).join(''); const say = d.split('').map(x => x === '0' ? 'oh' : ONES[+x]); return { say: `The number is ${say.slice(0, 5).join(' ')}, ${say.slice(5, 8).join(' ')}, ${say.slice(8).join(' ')}.`, prompt: 'Phone number:', ans: [d, d.slice(0, 5) + ' ' + d.slice(5, 8) + ' ' + d.slice(8)] }; }
+    case 'date': { const dd = ri(1, 28), m = ri(0, 11); return { say: `The course starts on the ${ordinal(dd)} of ${MONTHS[m]}.`, prompt: 'Start date (day and month):', ans: [`${dd} ${MONTHS[m]}`, `${MONTHS[m]} ${dd}`, `${dd}th ${MONTHS[m]}`, `${dd} ${MONTHS[m].slice(0, 3)}`, `${dd}/${m + 1}`] }; }
+    case 'time': { const h = ri(1, 11), q = pick([0, 15, 30, 45]); const say = q === 0 ? `${ONES[h] || words(h)} o'clock` : q === 15 ? `quarter past ${words(h)}` : q === 30 ? `half past ${words(h)}` : `quarter to ${words(h + 1)}`; const hh = q === 45 ? h : h, mm = q; return { say: `The meeting is at ${say}.`, prompt: 'Time:', ans: [`${hh}:${String(mm).padStart(2, '0')}`, `${hh}.${String(mm).padStart(2, '0')}`, ...(mm === 0 ? [String(hh)] : [])] }; }
+    case 'price': { const p = ri(5, 95), c = pick([0, 50, 25, 99]); return { say: `It costs ${words(p)} pounds${c ? ' ' + words(c) : ''}.`, prompt: 'Price (£):', ans: [c ? `${p}.${String(c).padStart(2, '0')}` : String(p), c ? `£${p}.${String(c).padStart(2, '0')}` : `£${p}`, ...(c ? [] : [`${p}.00`])] }; }
+    case 'teen': { const n = pick([13, 14, 15, 16, 17, 18, 19, 30, 40, 50, 60, 70, 80, 90]); return { say: `There are ${words(n)} people in the group.`, prompt: 'Number of people:', ans: [String(n)] }; }
+    case 'address': { const n = ri(2, 199), st = pick(DSTREETS); return { say: `I live at ${words(n)}, ${st}.`, prompt: 'Address:', ans: [`${n} ${st}`] }; }
+    default: { const pc = pick(['BR', 'SW', 'NE', 'LS', 'CB']) + ri(1, 9) + ' ' + ri(1, 9) + pick(['AB', 'TN', 'LP', 'RX', 'DW']); return { say: `The postcode is ${pc.replace(/ /g, '').split('').join(', ')}.`, prompt: 'Postcode:', ans: [pc, pc.replace(' ', '')] }; }
+  }
+}
+function dictSet() { const k = ['name', 'phone', 'date', 'time', 'price', 'teen', 'address', 'postcode']; return shuffle(k.concat(shuffle(k).slice(0, 2))).map(dictItem); }
+const dnorm = s => String(s).toLowerCase().replace(/(\d+)(st|nd|rd|th)\b/g, '$1').replace(/[£,]/g, '').replace(/\s+/g, ' ').trim().replace(/\.$/, '');
+const dictCorrect = (it, a) => it.ans.some(x => dnorm(x) === dnorm(a));

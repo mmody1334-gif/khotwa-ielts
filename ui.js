@@ -30,7 +30,16 @@ const TTS = {
   voice: null, speaking: false,
   pick() { const v = speechSynthesis.getVoices(); this.voice = v.find(x => /en[-_]GB/i.test(x.lang)) || v.find(x => /^en/i.test(x.lang)) || null; },
   ok() { return 'speechSynthesis' in window; },
-  play(script, onEnd, gapAfter = -1) {
+  el: null,
+  /** Plays the recorded mp3 for a section when it exists, otherwise reads the script with the device voice. */
+  play(script, onEnd, gapAfter = -1, id = '') {
+    if (id && C.audio && C.audio[id]) {
+      this.stop(); this.speaking = true;
+      const el = this.el = new Audio('/shared/audio/' + id + '.mp3?v=' + C.audio[id]);
+      el.onended = el.onerror = () => { this.speaking = false; onEnd && onEnd(); };
+      el.play().catch(() => { this.speaking = false; this.el = null; this.play(script, onEnd, gapAfter); });
+      return;
+    }
     if (!this.ok()) return;
     speechSynthesis.cancel(); this.pick();
     const sp = [...new Set(script.map(x => x[0]))], pitches = [1, 0.82, 1.18, 0.92];
@@ -43,7 +52,7 @@ const TTS = {
       if (i === gapAfter) { const p = new SpeechSynthesisUtterance('.'); p.volume = 0; p.rate = 0.3; speechSynthesis.speak(p); }
     });
   },
-  stop() { if (this.ok()) speechSynthesis.cancel(); this.speaking = false; },
+  stop() { if (this.el) { this.el.pause(); this.el = null; } if (this.ok()) speechSynthesis.cancel(); this.speaking = false; },
 };
 if (TTS.ok()) { TTS.pick(); speechSynthesis.onvoiceschanged = () => TTS.pick(); }
 
@@ -121,7 +130,10 @@ function vHome() {
   if (ANDROID) h += `<a class="apkbar" href="/khotwa-ielts.apk" download="khotwa-ielts.apk"><span class="apkico" aria-hidden="true">&#9660;</span><span><b>${tr('Get the Android app', 'حمّل تطبيق أندرويد')}</b><small>${tr('Works offline · same features', 'يعمل بدون إنترنت · نفس المزايا')}</small></span></a>`;
   if (IOS && !navigator.standalone && !R.iosHint) h += `<div class="notice"><b>${tr('Use it like an app on iPhone', 'استخدمه كتطبيق على الآيفون')}</b><br>${tr('In Safari tap Share, then Add to Home Screen. It then opens full screen and works offline.', 'في سفاري اضغط مشاركة ثم «إضافة إلى الشاشة الرئيسية». سيفتح بملء الشاشة ويعمل بدون إنترنت.')} ${btn(tr('Got it', 'تمام'), () => { R.iosHint = 1; save(); rerender(); }, '')}</div>`;
   h += `<section class="hero"><div class="blob"></div><span class="eyebrow">${esc(typeName(S.type))} · ${tr('GOAL', 'الهدف')} ${b1(S.goal)}</span><h2 style="margin:8px 0">${tr('A personal IELTS program that adapts to your results.', 'برنامج آيلتس شخصي يتكيّف مع نتائجك.')}</h2>
-    <div class="row" style="justify-content:flex-start">${pill(tr(S.minutes + ' min', S.minutes + ' دقيقة'), SKY)}${pill(tr('Streak ', 'متتالية ') + S.streak(), COR)}</div></section>`;
+    <div class="row" style="justify-content:flex-start">${pill(tr(S.minutes + ' min', S.minutes + ' دقيقة'), SKY)}${pill(tr('Streak ', 'متتالية ') + S.streak(), COR)}${R.exam && R.exam >= today() ? pill(tr(`Exam in ${R.exam - today()} days`, `الامتحان بعد ${R.exam - today()} يوم`), LIME) : ''}</div></section>`;
+  h += assignHTML();
+  const due = mistakesDue().length;
+  if (due) h += tile(`<h3>${tr(`${due} mistakes to review`, `${due} أخطاء للمراجعة`)}</h3><small>${tr('Questions you got wrong come back until you get them right twice.', 'الأسئلة التي أخطأت فيها ترجع حتى تجيبها صح مرتين.')}</small>`, 'review', 'c-spe');
   if (!S.placed) h += tile(`<h2>${part >= 1 && part <= 5 ? tr(`Continue the placement test (part ${part} of 5)`, `أكمل اختبار تحديد المستوى (الجزء ${part} من 5)`) : tr('Start with the placement test', 'ابدأ باختبار تحديد المستوى')}</h2><p>${tr('5 parts: grammar, reading, listening, writing and speaking, about 50 minutes. You can stop between parts.', '5 أجزاء: القواعد والقراءة والاستماع والكتابة والمحادثة، حوالي 50 دقيقة. يمكنك التوقف بين الأجزاء.')}</p>`, 'placement', 'c-fnd');
   else h += tile(`<h2>${tr(`Now about ${b1(pr.current)} → target ${b1(pr.target)}`, `الآن تقريبًا ${b1(pr.current)} ← الهدف ${b1(pr.target)}`)}</h2><b>${tr(`Week ${Math.floor((cd + 6) / 7)} of ${pr.weeks} · `, `الأسبوع ${Math.floor((cd + 6) / 7)} من ${pr.weeks} · `)}${phaseName(phaseOf(cd, pr.days))}</b><p class="small">${tr('Tap to see your program and what to improve.', 'اضغط لرؤية برنامجك وما تحتاج لتحسينه.')}</p>`, 'program', 'c-wri');
   h += `<div class="tile"><h2>${day > pr.days ? tr(`Extra day ${day}`, `يوم إضافي ${day}`) : tr(`Today, day ${day} of ${pr.days}`, `اليوم، يوم ${day} من ${pr.days}`)}</h2><div class="stack" style="margin-top:10px">${tasks.map(t => taskRow(day, t)).join('')}</div>
@@ -138,7 +150,15 @@ function vProgram() {
   h += `<div class="tile c-fnd"><h3>${tr('Estimated level', 'المستوى التقريبي')}</h3><div class="num" style="font-size:44px;display:block">${b1(pr.current)} → ${b1(pr.target)}</div><p>${!S.placed ? tr('Starter plan for 4 weeks. The real length is calculated after the placement test.', 'خطة بداية لمدة 4 أسابيع. المدة الحقيقية تُحسب بعد اختبار المستوى.')
     : pr.gap <= 0 ? tr('You are at or above your target estimate. The program keeps you exam-ready for 4 weeks. You can raise the target in Settings.', 'مستواك التقريبي عند هدفك أو أعلى. البرنامج يحافظ على جاهزيتك 4 أسابيع، ويمكنك رفع الهدف من الإعدادات.')
     : tr(`Gap: ${pr.gap} band. Program: about ${pr.weeks} weeks (${pr.hours} study hours at ${S.minutes} min a day, 6 days a week).`, `الفرق: ${pr.gap} درجة. البرنامج: حوالي ${pr.weeks} أسبوع (${pr.hours} ساعة مذاكرة بمعدل ${S.minutes} دقيقة يوميًا، 6 أيام في الأسبوع).`)}</p>
-    ${S.placed && pr.gap > 0 ? `<b>${tr('Expected finish: ', 'الانتهاء المتوقع: ')}${dateIn(pr.days - day)}</b>${pr.weeks >= 26 ? `<p class="small">${tr('That is long. More minutes a day shortens it a lot.', 'المدة طويلة. زيادة الدقائق اليومية تختصرها كثيرًا.')}</p>` : ''}` : ''}</div>`;
+    ${S.placed && pr.gap > 0 && !pr.exam ? `<b>${tr('Expected finish: ', 'الانتهاء المتوقع: ')}${dateIn(pr.days - day)}</b>${pr.weeks >= 26 ? `<p class="small">${tr('That is long. More minutes a day shortens it a lot.', 'المدة طويلة. زيادة الدقائق اليومية تختصرها كثيرًا.')}</p>` : ''}` : ''}</div>`;
+  if (pr.exam) {
+    const e = pr.exam;
+    h += `<div class="tile ${e.fits ? 'c-fnd' : 'c-spe'}" style="margin-top:12px"><h3>${tr(`Exam in ${e.daysLeft} days`, `الامتحان بعد ${e.daysLeft} يوم`)}</h3><p>${e.fits
+      ? tr(`Your target fits: about ${e.availHours} study hours are available at ${S.minutes} min a day.`, `هدفك مناسب للوقت: حوالي ${e.availHours} ساعة مذاكرة متاحة بمعدل ${S.minutes} دقيقة يوميًا.`)
+      : tr(`Not enough time for ${b1(pr.target)} at ${S.minutes} min a day. Options: study about ${e.needMinutes} min a day, or aim for about ${b1(e.reachable)} by the exam date.`, `الوقت غير كافٍ للوصول إلى ${b1(pr.target)} بمعدل ${S.minutes} دقيقة يوميًا. الخيارات: ذاكر حوالي ${e.needMinutes} دقيقة يوميًا، أو استهدف حوالي ${b1(e.reachable)} بحلول موعد الامتحان.`)}</p>${e.fits ? '' : `<div class="actions">${e.needMinutes <= 60 ? btn(tr(`Study ${Math.min(60, Math.ceil(e.needMinutes / 15) * 15)} min a day`, `ذاكر ${Math.min(60, Math.ceil(e.needMinutes / 15) * 15)} دقيقة يوميًا`), () => { S.minutes = Math.min(60, Math.ceil(e.needMinutes / 15) * 15); S.replanFuture(); rerender(); }, 'primary') : ''}${e.reachable < pr.target ? btn(tr(`Set target ${b1(e.reachable)}`, `اجعل الهدف ${b1(e.reachable)}`), () => { S.goal = Math.max(5, e.reachable); S.replanFuture(); rerender(); }) : ''}</div>`}</div>`;
+  }
+  const wt = weakType();
+  if (wt) h += `<div class="tile c-spe" style="margin-top:12px"><h3>${tr('Weak spot', 'نقطة ضعف')}: <span class="en">${QTYPE_NAMES[wt.type]}</span></h3><p class="small">${tr(`${Math.round(wt.acc * 100)}% correct in ${wt.n} answers. Your plan now picks passages with this question type more often.`, `${Math.round(wt.acc * 100)}% صحيحة من ${wt.n} إجابة. خطتك الآن تختار قطعًا فيها هذا النوع أكثر.`)}</p></div>`;
   h += `<div class="tile"><h2>${tr('Your skills', 'مهاراتك')}</h2><p class="small mute">${tr('Reading and Listening update after every practice. Writing and Speaking update when you use "estimate" in practice. You can also adjust them if a teacher gave you a level.', 'القراءة والاستماع تتحدّث بعد كل تدريب. الكتابة والمحادثة تتحدّث عند استخدام «قدّر» في التدريب، ويمكنك تعديلها إذا أعطاك معلم مستوى.')}</p>
     ${SKILLS.concat('foundation').map(sk => { const lv = level(sk); return `<div style="margin-top:12px"><div class="row"><b>${skillName(sk)}</b><span>${btn('−', () => { S.setEst(sk, Math.max(3, lv - 0.5)); S.replanFuture(); rerender(); }, '')} <b class="num" style="font-size:22px;margin:0 8px">${b1(lv)}</b> ${btn('+', () => { S.setEst(sk, Math.min(9, lv + 0.5)); S.replanFuture(); rerender(); }, '')}</span></div>${bar(lv / 9, lv >= S.goal ? 'var(--em)' : lv >= S.goal - 1 ? 'var(--mus)' : 'var(--cor)')}</div>`; }).join('')}</div>`;
   const b = Math.max(1, Math.floor(pr.days * 0.3)), p = Math.floor(pr.days * 0.8), cur = phaseOf(Math.min(day, pr.days), pr.days);
@@ -197,6 +217,7 @@ function vPractice() {
   V.qt = V.qt || '';
   let h = header(tr('Practice', 'تدريب'), false);
   h += `<div class="grid g2">${tile(`<h3>${tr('Quick practice', 'تدريب سريع')}</h3><small>${tr('12 mixed questions, 15 minutes.', '12 سؤال متنوع في 15 دقيقة.')}</small>`, 'quiz/quick', 'c-fnd')}${tile(`<h3>${tr('Checkpoint test', 'اختبار متابعة')}</h3><small>${tr('16 questions. Updates your levels and plan.', '16 سؤال، يحدّث مستوياتك وخطتك.')}</small>`, 'quiz/check', 'c-wri')}</div>`;
+  h += `<div class="grid g2" style="margin-top:12px">${tile(`<h3>${tr('Dictation', 'الإملاء')}</h3><small>${tr('Names, numbers, dates, times and prices by audio.', 'أسماء وأرقام وتواريخ وأوقات وأسعار بالصوت.')}</small>`, 'dict', 'c-lis')}${tile(`<h3>${tr('My mistakes', 'أخطائي')}</h3><small>${tr(`${mistakesDue().length} due · ${mistakes().length} saved`, `${mistakesDue().length} للمراجعة · ${mistakes().length} محفوظة`)}</small>`, 'review', 'c-spe')}</div>`;
   h += `<div class="actions">${['foundation', 'reading', 'listening'].map(sk => go(sk === 'foundation' ? tr('Grammar', 'القواعد') : skillName(sk), 'quiz/drill/' + sk)).join('')}</div>`;
   h += `<h2>${tr('By question type', 'حسب نوع السؤال')}</h2><div class="chips">${QTYPES.map(([k, n]) => chip(n, V.qt === k, () => { V.qt = V.qt === k ? '' : k; rerender(); })).join('')}</div>`;
   const has = s => !V.qt || s.groups.some(g => g.qs.some(q => q.t === V.qt));
@@ -257,6 +278,7 @@ function vQuiz(kind, arg) {
   const total = kind === 'quick' ? 15 * 60 : kind === 'check' ? 20 * 60 : 12 * 60, t = countdown('t', total);
   const finish = () => {
     if (V.done) return; V.done = true;
+    qs.forEach((q, i) => { if (V.ans[i] !== q.answer && q.id != null) addMistake('b' + q.id); });
     const items = qs.map((q, i) => ({ q: q.q, yours: V.ans[i] == null ? 'No answer' : q.options[V.ans[i]], correct: q.options[q.answer], ok: V.ans[i] === q.answer, why: q.why, tag: q.skill }));
     for (const sk of ['foundation', 'reading', 'listening']) {
       const sub = qs.map((q, i) => i).filter(i => qs[i].skill === sk); if (!sub.length) continue;
@@ -291,6 +313,7 @@ function vPaper(kind, id) {
       const a = V.ans[s.id + '|' + q.n], ok = isCorrect(q, a);
       items.push({ q: q.n + '. ' + q.q, yours: a == null || a === '' ? 'No answer' : q.t === 'gap' ? a : (optionsOf(g, q)[+a] ?? a), correct: correctText(g, q), ok, why: q.w, tag: q.t });
       S.addStat('ty', q.t, ok ? 1 : 0, 1); S.addStat('sk', kind === 'R' ? 'reading' : 'listening', ok ? 1 : 0, 1);
+      if (!ok && a != null && a !== '') addMistake('s' + s.id + '|' + q.n);
     }
     const score = items.filter(x => x.ok).length, b = band(score, items.length, kind);
     for (const s of secs) S.bump('secn', s.id);
@@ -308,7 +331,7 @@ function vPaper(kind, id) {
   if (kind === 'R') h += passageHTML(s);
   else {
     const played = V['pl' + s.id];
-    h += `<div class="tile c-lis"><b>${mockN ? tr('Audio plays once.', 'التسجيل يُشغَّل مرة واحدة.') : tr('Audio can be replayed.', 'يمكن إعادة التسجيل.')}</b><div class="actions">${btn(TTS.speaking ? tr('Playing...', 'يعمل...') : played && mockN ? tr('Played', 'تم التشغيل') : tr('Play audio', 'شغّل الصوت'), () => { V['pl' + s.id] = 1; TTS.play(s.script, rerender); rerender(); }, 'primary', TTS.speaking || (played && mockN))}${!mockN ? btn(tr('Stop', 'إيقاف'), () => { TTS.stop(); rerender(); }) : ''}</div>${!TTS.ok() ? `<p class="small">${tr('This browser cannot play the audio.', 'هذا المتصفح لا يستطيع تشغيل الصوت.')}</p>` : ''}</div>`;
+    h += `<div class="tile c-lis"><b>${mockN ? tr('Audio plays once.', 'التسجيل يُشغَّل مرة واحدة.') : tr('Audio can be replayed.', 'يمكن إعادة التسجيل.')}</b><div class="actions">${btn(TTS.speaking ? tr('Playing...', 'يعمل...') : played && mockN ? tr('Played', 'تم التشغيل') : tr('Play audio', 'شغّل الصوت'), () => { V['pl' + s.id] = 1; TTS.play(s.script, rerender, -1, s.id); rerender(); }, 'primary', TTS.speaking || (played && mockN))}${!mockN ? btn(tr('Stop', 'إيقاف'), () => { TTS.stop(); rerender(); }) : ''}</div>${!TTS.ok() ? `<p class="small">${tr('This browser cannot play the audio.', 'هذا المتصفح لا يستطيع تشغيل الصوت.')}</p>` : ''}</div>`;
   }
   h += groupsHTML(s, V.ans);
   h += `<div class="actions">${secs.length > 1 && V.tab < secs.length - 1 ? btn(tr('Next section', 'الجزء التالي'), () => { V.tab++; rerender(); scrollTo(0, 0); }) : ''}${btn(tr('Submit answers', 'سلّم الإجابات'), finish, 'hot')}</div>`;
@@ -358,6 +381,7 @@ function vWrite(id) {
   h += `<div class="actions">${btn(tr('Check text', 'افحص النص'), () => { V.report = analyse(text()); rerender(); })}${w.model ? btn(V.model ? tr('Hide model answer', 'أخفِ الإجابة النموذجية') : tr('Show model answer', 'اعرض الإجابة النموذجية'), () => { V.model = !V.model; rerender(); }) : ''}</div>`;
   if (V.report) h += `<div class="notice" style="white-space:pre-wrap">${esc(V.report)}</div>`;
   if (V.model && w.model) h += `<div class="tile"><p class="en" style="white-space:pre-wrap">${esc(w.model)}</p><p class="small mute">${tr('A model shows one way to answer, not the only way.', 'النموذج طريقة واحدة للإجابة وليس الطريقة الوحيدة.')}</p></div>`;
+  h += `<div class="actions">${btn(tr('AI feedback (needs internet)', 'ملاحظات الذكاء الاصطناعي (يحتاج إنترنت)'), () => { if (count() < 30) { toast(tr('Write at least 30 words first.', 'اكتب 30 كلمة على الأقل أولًا.')); return; } askFeedback('writing', w.prompt, text(), w.task, w.min, b => { S.setEst('writing', clamp(half(level('writing') * 0.65 + b * 0.35), 3, 9)); }); }, 'hot', V.fb && V.fb.loading)}</div>${feedbackHTML(V.fb)}`;
   h += `<div class="tile" style="margin-top:12px"><h3>${tr('Finished? Estimate my level', 'انتهيت؟ قدّر مستواي')}</h3><p class="small mute">${tr('Uses length, sentences, linking and word variety, limited by your grammar level. It cannot judge your ideas.', 'يعتمد على الطول والجمل وأدوات الربط وتنوّع الكلمات، ومحدود بمستوى قواعدك. لا يقيّم أفكارك.')}</p>
     ${V.scored == null ? btn(tr('Estimate and update my level', 'قدّر وحدّث مستواي'), () => {
       if (count() < 40) { toast(tr('Write at least 40 words first.', 'اكتب 40 كلمة على الأقل أولًا.')); return; }
@@ -391,7 +415,7 @@ function measureHTML() {
   return `<div class="tile c-lis" style="margin-top:12px"><h3>${tr('Speak and measure', 'تكلّم وقِس مستواك')}</h3><p class="small">${tr('The browser writes what you say and measures speed and vocabulary. It cannot judge pronunciation like an examiner.', 'المتصفح يكتب ما تقوله ويقيس السرعة والمفردات، ولا يقيّم النطق مثل الممتحن.')}</p>
     ${!cap.running ? btn(tr('Start', 'ابدأ'), () => { V.mres = ''; cap.start(); rerender(); }, 'primary', !!REC.mr) : `<div class="row">${timer('mt', 120 - cap.seconds)}${btn(tr('Finish', 'إنهاء'), score, 'hot')}</div><p class="en" id="cap" style="font-size:15px">${esc((cap.text + ' ' + cap.partial).trim() || tr('Listening...', 'يستمع...'))}</p>`}
     ${!cap.available ? `<p class="small"><b>${tr('Speech recognition is not available in this browser. On iPhone use Safari with Siri turned on; on Android use Chrome.', 'التعرّف على الكلام غير متاح في هذا المتصفح. على الآيفون استخدم سفاري مع تفعيل Siri، وعلى أندرويد استخدم كروم.')}</b></p>` : ''}
-    ${cap.error === 'permission' ? `<p class="small"><b>${tr('Microphone or speech permission was denied.', 'تم رفض إذن الميكروفون أو التعرّف على الكلام.')}</b></p>` : ''}${V.mres ? `<p><b>${esc(V.mres)}</b></p>` : ''}</div>`;
+    ${cap.error === 'permission' ? `<p class="small"><b>${tr('Microphone or speech permission was denied.', 'تم رفض إذن الميكروفون أو التعرّف على الكلام.')}</b></p>` : ''}${V.mres ? `<p><b>${esc(V.mres)}</b></p>` : ''}${!cap.running && textStats(cap.text).words >= 30 ? `<div class="actions">${btn(tr('AI feedback on what you said', 'ملاحظات الذكاء الاصطناعي على كلامك'), () => askFeedback('speaking', V.cue || '', cap.text, 2, 0, b => { S.setEst('speaking', clamp(half(level('speaking') * 0.7 + b * 0.3), 3, 9)); }), 'hot', V.fb && V.fb.loading)}</div>` : ''}${feedbackHTML(V.fb)}</div>`;
 }
 function vSpeak(id) {
   const mock = id === 'mock', sp = mock ? C.speaking[(today()) % C.speaking.length] : C.speaking.find(x => x.id === id);
@@ -404,6 +428,7 @@ function vSpeak(id) {
   h += `<h2 class="en">${esc(sp.topic)}</h2><div class="chips">${[1, 2, 3].map(p => chip(tr('Part ' + p, 'الجزء ' + p), V.part === p, () => { V.onLeave(); V.part = p; rerender(); })).join('')}</div>`;
   if (V.part === 1) h += `<div class="tile"><ul class="en">${sp.p1.map(q => `<li>${esc(q)}</li>`).join('')}</ul><p class="small mute">${tr('Answer each question in 2 to 4 sentences.', 'أجب عن كل سؤال في 2 إلى 4 جمل.')}</p></div>`;
   if (V.part === 2) {
+    V.cue = sp.cue.text + ' You should say: ' + sp.cue.bullets.join('; ');
     h += `<div class="tile c-fnd"><p class="en" style="font-weight:700">${esc(sp.cue.text)}</p><p class="en">You should say:</p><ul class="en">${sp.cue.bullets.map(b => `<li>${esc(b)}</li>`).join('')}</ul></div>`;
     h += `<div class="actions">${btn(t.run ? tr('Preparing...', 'تحضير...') : tr('1 minute to prepare', 'دقيقة للتحضير'), () => { t.run = true; t.last = Date.now(); rerender(); }, '', t.run || t.left <= 0)}${t.run ? timer('prep', t.left) : ''}</div><p class="small mute">${tr('Then speak for 1 to 2 minutes.', 'ثم تكلّم من دقيقة إلى دقيقتين.')}</p>`;
     h += measureHTML();
@@ -423,7 +448,7 @@ function vWords() {
   if (V.i >= V.queue.length) return h + `<div class="tile c-fnd" style="margin-top:12px"><h2>${tr('Session done', 'انتهت الجلسة')}</h2><p>${tr('Come back tomorrow. Words you miss come back sooner.', 'ارجع غدًا. الكلمات التي تخطئ فيها ترجع أسرع.')}</p></div><div class="actions">${btn(tr('Another round', 'جولة أخرى'), () => { V.queue = null; rerender(); }, 'primary')}</div>`;
   const w = V.queue[V.i];
   h += `<p class="small">${tr(`Card ${V.i + 1} of ${V.queue.length}`, `بطاقة ${V.i + 1} من ${V.queue.length}`)}</p>`;
-  h += `<button class="tile ${V.flip ? 'c-wri' : ''}" style="min-height:220px;text-align:center" data-a="${act(() => { V.flip = !V.flip; rerender(); })}"><div class="en" style="text-align:center"><h1>${esc(w.w)}</h1>${V.flip ? `<h3>${esc(w.def)}</h3><p>${esc(w.ex)}</p>` : `<small>${tr('Tap to flip', 'اضغط للقلب')}</small>`}</div></button>`;
+  h += `<button class="tile ${V.flip ? 'c-wri' : ''}" style="min-height:220px;text-align:center" data-a="${act(() => { V.flip = !V.flip; rerender(); })}"><div class="en" style="text-align:center"><h1>${esc(w.w)}</h1>${V.flip ? `<h3>${esc(w.def)}</h3>${w.ar ? `<p dir="rtl" style="font-weight:700">${esc(w.ar)}</p>` : ''}<p>${esc(w.ex)}</p>` : `<small>${tr('Tap to flip', 'اضغط للقلب')}</small>`}</div></button>`;
   if (V.flip) h += `<div class="actions">${btn(tr('Again', 'مرة أخرى'), () => { S.putMap('vl', String(w.id), 0); S.addDay(); V.i++; V.flip = false; rerender(); }, 'hot')}${btn(tr('Got it', 'حفظتها'), () => { S.putMap('vl', String(w.id), Math.min(4, lv(w) + 1)); S.addDay(); V.i++; V.flip = false; rerender(); }, 'primary')}</div>`;
   return h;
 }
@@ -455,12 +480,14 @@ function vSettings() {
   h += `<div class="tile"><h3>${tr('Language', 'اللغة')}</h3><div class="chips">${chip('English', S.lang === 'en', () => { S.lang = 'en'; rerender(); })}${chip('العربية', S.lang === 'ar', () => { S.lang = 'ar'; rerender(); })}</div><p class="small mute">${tr('The interface and lessons change. Exam passages and questions stay in English, as in the real test.', 'تتغير الواجهة والدروس. قطع وأسئلة الامتحان تبقى بالإنجليزية كما في الاختبار الحقيقي.')}</p></div>`;
   h += `<div class="tile" style="margin-top:12px"><h3>${tr('Test type', 'نوع الاختبار')}</h3><div class="chips">${['Academic', 'General Training'].map(t => chip(typeName(t), S.type === t, () => { S.type = t; S.replanFuture(); rerender(); })).join('')}</div>
     <h3>${tr('Target band', 'الدرجة المستهدفة')}</h3><div class="chips">${[5, 5.5, 6, 6.5, 7, 7.5, 8].map(g => chip(b1(g), S.goal === g, () => { S.goal = g; S.replanFuture(); rerender(); })).join('')}</div>
+    <h3>${tr('Exam date (optional)', 'موعد الامتحان (اختياري)')}</h3><div class="row" style="justify-content:flex-start;gap:8px"><input type="date" class="inp" id="exd" style="max-width:190px" value="${R.exam ? new Date(R.exam * 864e5).toISOString().slice(0, 10) : ''}">${R.exam ? btn(tr('Clear', 'مسح'), () => { delete R.exam; save(); S.replanFuture(); rerender(); }) : ''}</div>
     <h3>${tr('Minutes per day', 'دقائق يوميًا')}</h3><div class="chips">${[15, 30, 45, 60].map(m => chip(String(m), S.minutes === m, () => { S.minutes = m; S.replanFuture(); rerender(); })).join('')}</div><p class="small mute">${tr('Changing these re-plans the coming days.', 'تغيير هذه الإعدادات يعيد تخطيط الأيام القادمة.')}</p></div>`;
   h += `<div class="tile" style="margin-top:12px"><h3>${tr('Listening voice', 'صوت الاستماع')}</h3><p class="small">${TTS.voice ? tr('Using: ', 'المستخدم: ') + esc(TTS.voice.name) : tr('No English voice found yet.', 'لم يتم العثور على صوت إنجليزي بعد.')}</p>${btn(tr('Test the voice', 'جرّب الصوت'), () => TTS.play([['A', 'This is how the listening audio will sound.']]))}${IOS ? `<p class="small mute">${tr('On iPhone: Settings, Accessibility, Spoken Content, Voices, English, to download a better voice.', 'على الآيفون: الإعدادات، تسهيلات الاستخدام، المحتوى المنطوق، الأصوات، الإنجليزية، لتحميل صوت أفضل.')}</p>` : ''}</div>`;
   h += `<div class="tile" style="margin-top:12px"><h3>${tr('Backup', 'النسخ الاحتياطي')}</h3><p class="small mute">${tr('The same backup works in the Android app and the web app.', 'نفس النسخة الاحتياطية تعمل في تطبيق أندرويد وموقع الويب.')}</p><div class="actions">${btn(tr('Download backup', 'تنزيل نسخة احتياطية'), () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([S.export()], { type: 'application/json' })); a.download = 'khotwa-backup.json'; a.click(); })}${btn(tr('Copy as text', 'نسخ كنص'), () => { navigator.clipboard && navigator.clipboard.writeText(S.export()).then(() => toast(tr('Copied.', 'تم النسخ.'))); })}</div>
     <textarea class="inp" id="imp" style="min-height:90px" placeholder="${tr('Paste backup text here', 'الصق نص النسخة الاحتياطية هنا')}"></textarea><div class="actions">${btn(tr('Import pasted data', 'استيراد النص الملصوق'), () => { toast(S.import($('#imp').value) ? tr('Imported.', 'تم الاستيراد.') : tr('That is not valid backup text.', 'هذا ليس نص نسخة احتياطية صالح.')); rerender(); })}<label class="btn">${tr('Import file', 'استيراد ملف')}<input type="file" accept=".json,.txt,application/json,text/plain" hidden id="impf"></label></div></div>`;
+  h += classCard();
   h += `<div class="tile" style="margin-top:12px"><h3>${tr('Reset', 'إعادة الضبط')}</h3><p class="small mute">${tr('Deletes progress, drafts and settings in this browser.', 'يحذف التقدّم والمسودات والإعدادات من هذا المتصفح.')}</p>${V.confirm ? btn(tr('Yes, delete', 'نعم، احذف'), () => { S.reset(); V.confirm = false; location.hash = 'home'; }, 'danger') + ' ' + btn(tr('Cancel', 'إلغاء'), () => { V.confirm = false; rerender(); }) : btn(tr('Reset everything', 'احذف كل شيء'), () => { V.confirm = true; rerender(); }, 'danger')}</div>`;
-  V.after = () => { const f = $('#impf'); if (f) f.onchange = async () => { const t = await f.files[0].text(); toast(S.import(t) ? tr('Imported.', 'تم الاستيراد.') : tr('That is not valid backup text.', 'هذا ليس نص نسخة احتياطية صالح.')); rerender(); }; };
+  V.after = () => { const ed = $('#exd'); if (ed) ed.onchange = () => { if (!ed.value) return; const d = Math.floor(Date.parse(ed.value + 'T00:00:00Z') / 864e5); if (d <= today()) { toast(tr('Pick a future date.', 'اختر تاريخًا قادمًا.')); return; } R.exam = d; save(); S.replanFuture(); toast(tr('Exam date saved. Your plan now ends before it.', 'تم حفظ موعد الامتحان. خطتك تنتهي قبله الآن.')); rerender(); }; const f = $('#impf'); if (f) f.onchange = async () => { const t = await f.files[0].text(); toast(S.import(t) ? tr('Imported.', 'تم الاستيراد.') : tr('That is not valid backup text.', 'هذا ليس نص نسخة احتياطية صالح.')); rerender(); }; };
   return h;
 }
 
@@ -497,7 +524,7 @@ function vPlacement() {
     let h = header(title, true, kind === 'R' ? timer('pt', t.left) : '') + partBar(step) + `<h2>${kind === 'R' ? tr('Reading', 'القراءة') : tr('Listening', 'الاستماع')}</h2><h3 class="en">${esc(s.title)}</h3>`;
     if (kind === 'R') h += passageHTML(s);
     else {
-      h += `<p class="en">${esc(s.sub)}</p><div class="tile c-lis"><b>${tr('Read the questions first. The audio plays once, like the real test.', 'اقرأ الأسئلة أولًا. التسجيل يُشغَّل مرة واحدة كما في الامتحان.')}</b><div class="actions">${btn(TTS.speaking ? tr('Playing...', 'يعمل...') : V.played ? tr('Played', 'تم التشغيل') : tr('Play audio', 'شغّل الصوت'), () => { V.played = true; TTS.play(s.script, rerender, 8); rerender(); }, 'primary', TTS.speaking || V.played)}</div>${!TTS.ok() ? `<p class="small">${tr('This browser cannot play audio.', 'هذا المتصفح لا يستطيع تشغيل الصوت.')}</p>` : ''}</div>`;
+      h += `<p class="en">${esc(s.sub)}</p><div class="tile c-lis"><b>${tr('Read the questions first. The audio plays once, like the real test.', 'اقرأ الأسئلة أولًا. التسجيل يُشغَّل مرة واحدة كما في الامتحان.')}</b><div class="actions">${btn(TTS.speaking ? tr('Playing...', 'يعمل...') : V.played ? tr('Played', 'تم التشغيل') : tr('Play audio', 'شغّل الصوت'), () => { V.played = true; TTS.play(s.script, rerender, 8, s.id); rerender(); }, 'primary', TTS.speaking || V.played)}</div>${!TTS.ok() ? `<p class="small">${tr('This browser cannot play audio.', 'هذا المتصفح لا يستطيع تشغيل الصوت.')}</p>` : ''}</div>`;
     }
     h += groupsHTML(s, V.ans);
     return h + `<div class="actions">${btn(tr('Finish this part', 'أنهِ هذا الجزء'), finish, 'hot', kind === 'L' && (!V.played || TTS.speaking) && TTS.ok())}</div>${kind === 'L' && !V.played ? `<p class="small mute">${tr('Play the audio to continue.', 'شغّل التسجيل للمتابعة.')}</p>` : ''}`;
@@ -564,10 +591,10 @@ function navHTML(r) {
   return tabs.map(([k, l]) => `<a href="#${k}" class="${r === k ? 'on' : ''}"><svg viewBox="0 0 24 24">${ICON[k]}</svg><span>${l}</span></a>`).join('') + `<button class="menubtn2" data-menu="1"><svg viewBox="0 0 24 24">${ICON.menu}</svg><span>${tr('More', 'المزيد')}</span></button>`;
 }
 function menuHTML() {
-  const M = [['program', tr('My program', 'برنامجي'), 'c-wri'], ['placement', tr('Placement test', 'اختبار تحديد المستوى'), 'c-fnd'], ['lessons', tr('Lessons', 'الدروس'), 'c-lis'], ['mocks', tr('Mock tests', 'اختبارات المحاكاة'), 'c-rea'], ['progress', tr('Progress', 'التقدّم'), 'c-spe'], ['settings', tr('Settings', 'الإعدادات'), 'c-em'], ['about', tr('About and limits', 'عن التطبيق وحدوده'), 'c-ink']];
+  const M = [['program', tr('My program', 'برنامجي'), 'c-wri'], ['placement', tr('Placement test', 'اختبار تحديد المستوى'), 'c-fnd'], ['lessons', tr('Lessons', 'الدروس'), 'c-lis'], ['mocks', tr('Mock tests', 'اختبارات المحاكاة'), 'c-rea'], ['progress', tr('Progress', 'التقدّم'), 'c-spe'], ['teacher', tr('Teacher', 'المعلم/ة'), 'c-lis'], ['settings', tr('Settings', 'الإعدادات'), 'c-em'], ['about', tr('About and limits', 'عن التطبيق وحدوده'), 'c-ink']];
   return `<div class="mgrid">${M.map(([h, t, c]) => `<a href="#${h}" class="${c}"><b>${t}</b></a>`).join('')}</div><p class="mfoot">${tr('Independent practice, not affiliated with IELTS, the British Council or IDP.', 'تدريب مستقل، غير تابع لآيلتس أو المجلس الثقافي البريطاني أو IDP.')}</p>`;
 }
-const LTR_ROUTES = ['quiz', 'paper', 'write', 'speak', 'results', 'words'];
+const LTR_ROUTES = ['quiz', 'paper', 'write', 'speak', 'results', 'words', 'review', 'dict'];
 function render(same) {
   const hash = decodeURIComponent(location.hash.slice(1)) || 'home', p = hash.split('/'), r = p[0];
   if (!same && hash !== vKey) { if (V.onLeave) V.onLeave(); TTS.stop(); V = {}; vKey = hash; }
@@ -577,7 +604,7 @@ function render(same) {
   try {
     html = ({
       home: vHome, program: vProgram, plan: vPlan, lessons: vLessons, practice: vPractice, mocks: vMocks, words: vWords, progress: vProgress, about: vAbout, settings: vSettings, results: vResults, placement: vPlacement,
-      lesson: () => vLesson(p[1]), ext: () => vExt(p[1] || ''), quiz: () => p[1] === 'placement' ? vPlacement() : vQuiz(p[1] || 'quick', p[2] || ''), paper: () => vPaper(p[1] || 'R', p[2] || ''), write: () => vWrite(p[1] || ''), speak: () => vSpeak(p[1] || ''),
+      lesson: () => vLesson(p[1]), teacher: () => vTeacher(p[1] || ''), review: vReview, dict: vDict, ext: () => vExt(p[1] || ''), quiz: () => p[1] === 'placement' ? vPlacement() : vQuiz(p[1] || 'quick', p[2] || ''), paper: () => vPaper(p[1] || 'R', p[2] || ''), write: () => vWrite(p[1] || ''), speak: () => vSpeak(p[1] || ''),
     }[r] || vHome)();
   } catch (e) { console.error(e); html = `<div class="notice error">${esc(e.message)}</div>`; }
   const main = $('#main');
@@ -602,5 +629,140 @@ window.addEventListener('beforeunload', () => { if (V.onLeave) V.onLeave(); });
 (async () => {
   try { await loadContent(); } catch (e) { $('#main').innerHTML = `<div class="notice error">${tr('Could not load the content. Check your connection and reload.', 'تعذّر تحميل المحتوى. تحقّق من الاتصال وأعد التحميل.')}</div>`; return; }
   render(false);
+  if (R.cls && (!R.syncAt || Date.now() - R.syncAt > 3600e3)) syncNow();
   if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { });
 })();
+
+/* ---------------------------------------------------------------- mistakes review */
+function vReview() {
+  if (!V.q) { V.q = shuffle(mistakesDue()).slice(0, 12).map(m => m.key); V.i = 0; V.ok = 0; V.ltr = true; }
+  let h = header(tr('My mistakes', 'أخطائي'));
+  if (!V.q.length) return h + `<div class="tile c-fnd"><h2>${tr('Nothing to review now', 'لا شيء للمراجعة الآن')}</h2><p>${tr(`${mistakes().length} questions are waiting for a later day. Wrong answers in practice are added here automatically.`, `${mistakes().length} سؤالًا تنتظر يومًا لاحقًا. الإجابات الخاطئة في التدريب تُضاف هنا تلقائيًا.`)}</p></div>`;
+  if (V.i >= V.q.length) return h + `<div class="tile c-fnd"><h2>${tr('Review done', 'انتهت المراجعة')}</h2><div class="num">${V.ok} / ${V.q.length}</div><p>${tr('Right answers come back later; after two in a row they leave the list.', 'الإجابات الصحيحة ترجع لاحقًا؛ وبعد مرتين متتاليتين تخرج من القائمة.')}</p></div><div class="actions">${go(tr('Back to home', 'العودة للرئيسية'), 'home', 'primary')}</div>`;
+  const key = V.q[V.i], it = mistakeItem(key);
+  if (!it) { reviewAnswer(key, true); reviewAnswer(key, true); V.i++; return vReview(); }
+  h += bar((V.i + 1) / V.q.length, 'var(--cor)') + `<p class="small mute">${V.i + 1} / ${V.q.length}</p>`;
+  const done = V.checked;
+  const next = () => { V.i++; V.checked = false; V.a = null; rerender(); scrollTo(0, 0); };
+  if (it.bank) {
+    const q = it.bank;
+    if (q.context) h += `<div class="passage en"><p>${esc(q.context)}</p></div>`;
+    h += `<h3 class="en">${esc(q.q)}</h3><div class="options">${q.options.map((o, k) => `<button class="option ${V.a === k ? 'selected' : ''} ${done && k === q.answer ? 'right' : ''} ${done && V.a === k && k !== q.answer ? 'wrong' : ''}" data-a="${act(() => { if (!done) { V.a = k; rerender(); } })}"><span class="letter">${'ABCD'[k]}</span><span>${esc(o)}</span></button>`).join('')}</div>`;
+    if (!done) h += `<div class="actions">${btn(tr('Check', 'تحقق'), () => { if (V.a == null) return; V.checked = true; const ok = V.a === q.answer; if (ok) V.ok++; reviewAnswer(key, ok); rerender(); }, 'primary', V.a == null)}</div>`;
+    else h += `<p class="small en">${esc(q.why)}</p><div class="actions">${btn(tr('Next', 'التالي'), next, 'primary')}</div>`;
+    return h;
+  }
+  const { sec, g, q } = it, isL = !!sec.script;
+  h += `<p class="small mute en">${esc(sec.title)}</p><div class="ins">${esc(g.ins)}</div>`;
+  h += `<div class="actions">${btn(V.ctx ? tr('Hide', 'إخفاء') : isL ? tr('Show transcript', 'اعرض النص') : tr('Show passage', 'اعرض القطعة'), () => { V.ctx = !V.ctx; rerender(); })}</div>`;
+  if (V.ctx) h += isL ? `<div class="passage en"><p style="white-space:pre-wrap">${esc(sec.script.map(x => x[0] + ': ' + x[1]).join('\n'))}</p></div>` : passageHTML(sec);
+  V.ans = V.ans || {};
+  const k = 'r' + key;
+  h += questionHTML(g, q, k, V.ans);
+  if (!done) h += `<div class="actions">${btn(tr('Check', 'تحقق'), () => { const a = V.ans[k]; if (a == null || a === '') return; V.checked = true; const ok = isCorrect(q, a); V.right = ok; if (ok) V.ok++; reviewAnswer(key, ok); rerender(); }, 'primary')}</div>`;
+  else h += `<div class="notice ${V.right ? 'good' : 'error'}"><b>${V.right ? tr('Correct', 'صحيح') : tr('Answer: ', 'الصحيح: ') + esc(correctText(g, q))}</b><br><span class="en">${esc(q.w)}</span></div><div class="actions">${btn(tr('Next', 'التالي'), () => { V.ans = {}; next(); }, 'primary')}</div>`;
+  return h;
+}
+
+/* ---------------------------------------------------------------- dictation */
+function vDict() {
+  if (!V.items) { V.items = dictSet(); V.i = 0; V.ok = 0; V.ltr = true; }
+  let h = header(tr('Dictation', 'الإملاء'));
+  if (V.i >= V.items.length) {
+    if (!V.saved) { S.addStat('dict', 'all', V.ok, V.items.length); S.addHistory(tr('Dictation', 'إملاء'), V.ok, V.items.length, null); V.saved = true; }
+    return h + `<div class="tile c-fnd"><h2>${tr('Done', 'انتهى')}</h2><div class="num">${V.ok} / ${V.items.length}</div><p>${tr('In the exam, spelling and numbers must be exact. Section 1 depends on them.', 'في الامتحان يجب أن تكون التهجئة والأرقام دقيقة. الجزء الأول يعتمد عليها.')}</p></div><div class="actions">${btn(tr('Another round', 'جولة أخرى'), () => { V.items = null; rerender(); }, 'primary')}</div>`;
+  }
+  const it = V.items[V.i];
+  h += bar((V.i + 1) / V.items.length, 'var(--sky)') + `<p class="small mute">${V.i + 1} / ${V.items.length}</p>`;
+  h += `<div class="tile c-lis"><b>${tr('Listen and write exactly what you hear.', 'استمع واكتب بالضبط ما تسمعه.')}</b><div class="actions">${btn(tr('Play', 'شغّل'), () => TTS.play([['A', it.say]]), 'primary')}</div></div>`;
+  h += `<p class="en" style="margin-top:12px"><b>${esc(it.prompt)}</b></p><input class="inp" id="dk" autocomplete="off" autocapitalize="off" spellcheck="false" ${V.checked ? 'disabled' : ''}>`;
+  if (!V.checked) h += `<div class="actions">${btn(tr('Check', 'تحقق'), () => { const a = $('#dk').value; if (!a.trim()) return; V.last = a; V.right = dictCorrect(it, a); if (V.right) V.ok++; V.checked = true; rerender(); }, 'primary')}</div>`;
+  else h += `<div class="notice ${V.right ? 'good' : 'error'}"><b>${V.right ? tr('Correct', 'صحيح') : tr('Answer: ', 'الصحيح: ') + esc(it.ans[0])}</b><br><span class="en small">"${esc(it.say)}"</span></div><div class="actions">${btn(tr('Next', 'التالي'), () => { V.i++; V.checked = false; rerender(); }, 'primary')}</div>`;
+  V.after = () => { const e = $('#dk'); if (e) { e.value = V.checked ? V.last : ''; if (!V.checked) e.focus(); } };
+  return h;
+}
+
+/* ---------------------------------------------------------------- server: classes and AI feedback */
+async function api(path, body) {
+  try { const r = await fetch('/api/' + path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }); const o = await r.json().catch(() => ({ error: 'Bad response' })); if (!r.ok && !o.error) o.error = 'HTTP ' + r.status; return o; }
+  catch (e) { return { error: tr('No internet connection.', 'لا يوجد اتصال بالإنترنت.') }; }
+}
+/** What the teacher sees: levels, plan, recent sessions. Same shape as the Android app sends. */
+function syncData() {
+  const hs = S.history(), wk = today() - 7;
+  return { overall: currentOverall(), est: R.est || {}, goal: S.goal, type: S.type, placed: S.placed, minutes: S.minutes, streak: S.streak(),
+    exam: R.exam || 0, week: hs.filter(h => h.day > wk).length, recent: hs.slice(0, 8).map(h => ({ t: h.title, s: h.score, n: h.total, d: h.day })), mistakes: mistakes().length, done: R.assignDone || [] };
+}
+let syncT;
+async function syncNow() {
+  if (!R.cls) return;
+  const o = await api('sync', { id: R.cls.id, token: R.cls.token, data: syncData() });
+  if (o.error) { if (/Not in this class/.test(o.error)) { delete R.cls; save(); } return; }
+  R.cls.className = o.className; R.assign = o.assignments || []; R.syncAt = Date.now(); save();
+  if (['home'].includes(location.hash.slice(1) || 'home')) rerender();
+}
+const syncSoon = () => { clearTimeout(syncT); syncT = setTimeout(syncNow, 4000); };
+(function hookHistory() { const add = S.addHistory.bind(S); S.addHistory = (...a) => { add(...a); syncSoon(); }; })();
+
+function assignHTML() {
+  const done = R.assignDone || [], list = (R.assign || []).filter(a => !done.includes(a.id));
+  if (!R.cls || !list.length) return '';
+  return `<div class="tile c-wri"><h3>${tr('From your teacher', 'من معلمتك')} · ${esc(R.cls.className || '')}</h3><div class="stack" style="margin-top:8px">${list.map(a => `<div class="task"><button class="chk" data-a="${act(() => { R.assignDone = done.concat(a.id); save(); syncSoon(); rerender(); })}"></button><a href="#${esc(a.route)}" style="flex:1;text-decoration:none"><b>${esc(a.title || a.route)}</b></a></div>`).join('')}</div></div>`;
+}
+function classCard() {
+  if (R.cls) return `<div class="tile" style="margin-top:12px"><h3>${tr('My class', 'فصلي')}</h3><p>${esc(R.cls.className || R.cls.code)} · ${esc(R.cls.name)}</p><p class="small mute">${tr('Your levels and recent sessions are shared with your teacher.', 'مستوياتك وجلساتك الأخيرة تُشارك مع معلمتك.')}${R.syncAt ? ' ' + tr('Last sync: ', 'آخر مزامنة: ') + new Date(R.syncAt).toLocaleString() : ''}</p><div class="actions">${btn(tr('Sync now', 'زامن الآن'), async () => { await syncNow(); toast(tr('Synced.', 'تمت المزامنة.')); rerender(); })}${btn(tr('Leave class', 'غادر الفصل'), () => { delete R.cls; delete R.assign; save(); rerender(); }, 'danger')}</div></div>`;
+  return `<div class="tile" style="margin-top:12px"><h3>${tr('Join a class', 'انضم إلى فصل')}</h3><p class="small mute">${tr('If your teacher gave you a class code, join to receive tasks and share your progress.', 'إذا أعطتك معلمتك كود فصل، انضم لتصلك المهام وتشارك تقدّمك.')}</p>
+    <input class="inp" id="jc" placeholder="${tr('Class code', 'كود الفصل')}" style="text-transform:uppercase;margin-bottom:8px"><input class="inp" id="jn" placeholder="${tr('Your name', 'اسمك')}">
+    <div class="actions">${btn(tr('Join', 'انضم'), async () => { const o = await api('join', { code: $('#jc').value.trim(), name: $('#jn').value.trim() }); if (o.error) { toast(o.error); return; } R.cls = { id: o.id, token: o.token, code: o.code, className: o.className, name: $('#jn').value.trim() }; save(); await syncNow(); toast(tr('Joined ', 'انضممت إلى ') + o.className); rerender(); }, 'primary')}</div>
+    <p class="small"><a href="#teacher">${tr('I am a teacher', 'أنا معلم/ة')}</a></p></div>`;
+}
+
+/* teacher page */
+const ASSIGNABLE = () => [['placement', tr('Placement test', 'اختبار تحديد المستوى')], ['quiz/check', tr('Checkpoint test', 'اختبار متابعة')], ['dict', tr('Dictation', 'الإملاء')], ['review', tr('Review mistakes', 'مراجعة الأخطاء')], ['write/mock', tr('Writing mock', 'محاكاة الكتابة')], ['speak/mock', tr('Speaking mock', 'محاكاة المحادثة')]]
+  .concat([...Array(mocks()).keys()].flatMap(i => [['paper/R/mock' + (i + 1), tr('Mock ', 'محاكاة ') + (i + 1) + ' · ' + tr('Reading', 'القراءة')], ['paper/L/mock' + (i + 1), tr('Mock ', 'محاكاة ') + (i + 1) + ' · ' + tr('Listening', 'الاستماع')]]))
+  .concat(C.external.map(x => ['ext/' + x.id, x.title]))
+  .concat(C.reading.map(x => ['paper/R/' + x.id, tr('Reading: ', 'قراءة: ') + x.title]), C.listening.map(x => ['paper/L/' + x.id, tr('Listening: ', 'استماع: ') + x.title]), C.writing.map(x => ['write/' + x.id, x.title]));
+function vTeacher(code) {
+  R.teach = R.teach || [];
+  let h = header(tr('Teacher', 'المعلم/ة'));
+  if (!code) {
+    h += `<p>${tr('Create a class, give students the code, then see their levels and send them tasks.', 'أنشئ فصلًا، أعطِ الطلاب الكود، ثم تابع مستوياتهم وأرسل لهم مهام.')}</p><div class="stack">${R.teach.map(c => tile(`<h3>${esc(c.name)}</h3><small>${tr('Code: ', 'الكود: ')}<b>${esc(c.code)}</b></small>`, 'teacher/' + c.code)).join('')}</div>`;
+    h += `<div class="tile" style="margin-top:12px"><h3>${tr('New class', 'فصل جديد')}</h3><input class="inp" id="cn" placeholder="${tr('Class name, e.g. Grade 12 IELTS', 'اسم الفصل، مثل: آيلتس الصف 12')}"><div class="actions">${btn(tr('Create', 'أنشئ'), async () => { const o = await api('class/create', { name: $('#cn').value.trim() }); if (o.error) { toast(o.error); return; } R.teach.push(o); save(); location.hash = 'teacher/' + o.code; }, 'primary')}</div></div>`;
+    h += `<div class="tile" style="margin-top:12px"><h3>${tr('Open a class on this device', 'افتح فصلًا على هذا الجهاز')}</h3><p class="small mute">${tr('Use the class code and teacher key from the device where you created it.', 'استخدم كود الفصل ومفتاح المعلم من الجهاز الذي أنشأته عليه.')}</p><input class="inp" id="oc" placeholder="${tr('Class code', 'كود الفصل')}" style="margin-bottom:8px"><input class="inp" id="ok" placeholder="${tr('Teacher key', 'مفتاح المعلم')}"><div class="actions">${btn(tr('Open', 'افتح'), async () => { const c = $('#oc').value.trim().toUpperCase(), k = $('#ok').value.trim(); const o = await api('class/view', { code: c, key: k }); if (o.error) { toast(o.error); return; } R.teach.push({ code: c, key: k, name: o.name }); save(); location.hash = 'teacher/' + c; })}</div></div>`;
+    return h;
+  }
+  const c = R.teach.find(x => x.code === code); if (!c) return vTeacher('');
+  if (!V.cls && !V.loading) { V.loading = true; api('class/view', { code: c.code, key: c.key }).then(o => { V.cls = o; V.loading = false; rerender(); }); }
+  h += `<h2>${esc(c.name)}</h2><div class="notice"><b>${tr('Class code for students: ', 'كود الفصل للطلاب: ')}<span class="en" style="font-size:22px">${esc(c.code)}</span></b><br><small>${tr('Teacher key (keep private): ', 'مفتاح المعلم (احتفظ به لنفسك): ')}<span class="en">${esc(c.key)}</span></small></div>`;
+  if (!V.cls) return h + `<p>${tr('Loading...', 'جارٍ التحميل...')}</p>`;
+  if (V.cls.error) return h + `<div class="notice error">${esc(V.cls.error)}</div>`;
+  const st = V.cls.students || [], ago = t => { const d = Math.floor((Date.now() - t) / 864e5); return d <= 0 ? tr('today', 'اليوم') : tr(d + ' d ago', 'منذ ' + d + ' يوم'); };
+  h += `<h3 style="margin-top:14px">${tr('Students', 'الطلاب')} (${st.length})</h3>`;
+  if (!st.length) h += `<p class="small mute">${tr('No students yet. They join from Settings, Join a class.', 'لا يوجد طلاب بعد. ينضمون من الإعدادات، «انضم إلى فصل».')}</p>`;
+  h += `<div class="stack">${st.map(x => { const d = x.data || {}, e = d.est || {}; return `<div class="tile"><div class="row"><h3>${esc(x.name)}</h3>${pill(d.placed ? b1(d.overall || 0) + ' → ' + b1(d.goal || 0) : tr('No placement yet', 'لم يختبر المستوى'), d.placed ? lvColor(d.overall || 0) : '')}</div>
+    <small>${['reading', 'listening', 'writing', 'speaking'].map(k => skillName(k) + ' ' + (e[k] != null ? b1(e[k]) : '-')).join(' · ')}</small><br>
+    <small class="mute">${tr('Active ', 'آخر نشاط ')}${ago(x.updated)} · ${tr('sessions this week: ', 'جلسات الأسبوع: ')}${d.week || 0} · ${tr('streak ', 'متتالية ')}${d.streak || 0}${d.exam ? ' · ' + tr('exam in ', 'الامتحان بعد ') + (d.exam - today()) + tr(' days', ' يوم') : ''}</small>
+    ${(d.recent || []).length ? `<details><summary class="small">${tr('Recent sessions', 'الجلسات الأخيرة')}</summary>${d.recent.map(r => `<div class="small">${esc(r.t)}: ${r.s}/${r.n}</div>`).join('')}</details>` : ''}
+    <div class="actions">${btn(tr('Remove', 'إزالة'), async () => { if (!confirm(tr('Remove this student?', 'إزالة هذا الطالب؟'))) return; await api('class/remove', { code: c.code, key: c.key, id: x.id }); V.cls = null; rerender(); }, 'danger')}</div></div>`; }).join('')}</div>`;
+  h += `<h3 style="margin-top:14px">${tr('Tasks for the class', 'مهام الفصل')}</h3><div class="stack">${(V.cls.assignments || []).map(a => { const n = st.filter(x => ((x.data || {}).done || []).includes(a.id)).length; return `<div class="task"><span style="flex:1"><b>${esc(a.title)}</b><br><small class="mute">${tr(`done by ${n} of ${st.length}`, `أنجزها ${n} من ${st.length}`)}</small></span>${btn('✕', async () => { await api('class/unassign', { code: c.code, key: c.key, id: a.id }); V.cls = null; rerender(); })}</div>`; }).join('')}</div>`;
+  h += `<div class="tile" style="margin-top:12px"><h3>${tr('Send a task', 'أرسل مهمة')}</h3><select class="inp" id="as">${ASSIGNABLE().map(([r, t]) => `<option value="${esc(r)}">${esc(t)}</option>`).join('')}</select><div class="actions">${btn(tr('Send to the class', 'أرسل للفصل'), async () => { const sel = $('#as'); const o = await api('class/assign', { code: c.code, key: c.key, route: sel.value, title: sel.options[sel.selectedIndex].text }); if (o.error) { toast(o.error); return; } toast(tr('Sent.', 'تم الإرسال.')); V.cls = null; rerender(); }, 'primary')}${btn(tr('Refresh', 'تحديث'), () => { V.cls = null; rerender(); })}</div></div>`;
+  return h;
+}
+
+/* AI feedback */
+function feedbackHTML(fb) {
+  if (!fb) return '';
+  if (fb.loading) return `<div class="notice">${tr('The AI is reading your answer...', 'الذكاء الاصطناعي يقرأ إجابتك...')}</div>`;
+  if (fb.error) return `<div class="notice error">${esc(fb.error)}</div>`;
+  return `<div class="tile c-fnd" style="margin-top:12px"><h3>${tr('AI feedback', 'ملاحظات الذكاء الاصطناعي')} · ${tr('about ', 'حوالي ')}${b1(fb.band || 0)}</h3>
+    ${(fb.criteria || []).map(c => `<p><b class="en">${esc(c.name)}: ${b1(c.band || 0)}</b><br>${esc(c.comment)}</p>`).join('')}
+    ${(fb.strengths || []).length ? `<b>${tr('Strengths', 'نقاط القوة')}</b><ul>${fb.strengths.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${(fb.improve || []).length ? `<b>${tr('To improve', 'للتحسين')}</b><ul>${fb.improve.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+    ${(fb.corrections || []).length ? `<b>${tr('Corrections', 'تصحيحات')}</b>${fb.corrections.map(x => `<p class="small"><s class="en">${esc(x.wrong)}</s> → <b class="en">${esc(x.better)}</b><br>${esc(x.why)}</p>`).join('')}` : ''}
+    <p class="small mute">${tr('A practice estimate by AI, not an official score. It can be wrong; ask your teacher when in doubt.', 'تقدير تدريبي من الذكاء الاصطناعي وليس درجة رسمية. قد يخطئ؛ اسأل معلمك عند الشك.')}</p></div>`;
+}
+async function askFeedback(kind, prompt, text, task, min, onDone) {
+  V.fb = { loading: true }; rerender();
+  const o = await api('feedback', { kind, prompt, text, task, min, lang: S.lang });
+  V.fb = o; if (!o.error && o.band) onDone && onDone(+o.band); rerender();
+}

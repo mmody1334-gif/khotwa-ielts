@@ -7261,6 +7261,878 @@
    "w": "undertake",
    "def": "to take on a task or responsibility",
    "ex": "The team undertook a three-year study."
+  },
+  {
+   "id": 68,
+   "w": "analysis",
+   "def": "a careful study of something to understand it",
+   "ex": "A closer analysis of the data showed a different trend.",
+   "ar": "تحليل",
+   "list": "AWL"
+  },
+  {
+   "id": 69,
+   "w": "approach",
+   "def": "a way of dealing with something",
+   "ex": "Teachers are trying a new approach to homework.",
+   "ar": "نهج / طريقة",
+   "list": "AWL"
+  },
+  {
+   "id": 70,
+   "w": "area",
+   "def": "a subject or field of activity; a part of a place",
+   "ex": "Water supply is a key area of research.",
+   "ar": "مجال / منطقة",
+   "list": "AWL"
+  },
+  {
+   "id": 71,
+   "w": "assessment",
+   "def": "a judgement about quality or level",
+   "ex": "The assessment includes a written test and an interview.",
+   "ar": "تقييم",
+   "list": "AWL"
+  },
+  {
+   "id": 72,
+   "w": "assume",
+   "def": "to think something is true without proof",
+   "ex": "Many people assume that older drivers are less safe.",
+   "ar": "يفترض",
+   "list": "AWL"
+  },
+  {
+   "id": 73,
+   "w": "authority",
+   "def": "the power to make decisions; an official body",
+   "ex": "The local authority closed the road for repairs.",
+   "ar": "سلطة / جهة رسمية",
+   "list": "AWL"
+  },
+  {
+   "id": 74,
+   "w": "available",
+   "def": "able to be used or obtained",
+   "ex": "The results will be available next week.",
+   "ar": "متاح / متوفر",
+   "list": "AWL"
+  },
+  {
+   "id": 75,
+   "w": "benefit",
+   "def": "an advantage or good effect",
+   "ex": "Regular exercise has many health benefits.",
+   "ar": "فائدة / منفعة",
+   "list": "AWL"
+  },
+  {
+   "id": 76,
+   "w": "concept",
+   "def": "an idea or principle",
+   "ex": "The concept of recycling is easy to understand.",
+   "ar": "مفهوم",
+   "list": "AWL"
+  },
+  {
+   "id": 77,
+   "w": "constitutional",
+   "def": "relating to a country's basic laws",
+   "ex": "The court made a constitutional decision.",
+   "ar": "دستوري",
+   "list": "AWL"
+  },
+  {
+   "id": 78,
+   "w": "context",
+   "def": "the situation in which something happens",
+   "ex": "Words can change meaning depending on the context.",
+   "ar": "سياق",
+   "list": "AWL"
+  },
+  {
+   "id": 79,
+   "w": "contract",
+   "def": "a formal written agreement",
+   "ex": "The company signed a two-year contract.",
+   "ar": "عقد",
+   "list": "AWL"
+  },
+  {
+   "id": 80,
+   "w": "create",
+   "def": "to make something new",
+   "ex": "The project will create hundreds of jobs.",
+   "ar": "يُنشئ / يخلق",
+   "list": "AWL"
+  },
+  {
+   "id": 81,
+   "w": "data",
+   "def": "facts or numbers collected for study",
+   "ex": "The data was collected over five years.",
+   "ar": "بيانات",
+   "list": "AWL"
+  },
+  {
+   "id": 82,
+   "w": "definition",
+   "def": "a statement of what a word or idea means",
+   "ex": "There is no single definition of success.",
+   "ar": "تعريف",
+   "list": "AWL"
+  },
+  {
+   "id": 83,
+   "w": "derive",
+   "def": "to get something from a source",
+   "ex": "Many English words derive from Latin.",
+   "ar": "يستمد / يُشتق",
+   "list": "AWL"
+  },
+  {
+   "id": 84,
+   "w": "distribution",
+   "def": "the way something is shared or spread",
+   "ex": "The distribution of wealth is uneven.",
+   "ar": "توزيع",
+   "list": "AWL"
+  },
+  {
+   "id": 85,
+   "w": "economic",
+   "def": "relating to trade, industry and money",
+   "ex": "The country has seen strong economic growth.",
+   "ar": "اقتصادي",
+   "list": "AWL"
+  },
+  {
+   "id": 86,
+   "w": "environment",
+   "def": "the natural world; surroundings",
+   "ex": "Plastic waste harms the environment.",
+   "ar": "البيئة / المحيط",
+   "list": "AWL"
+  },
+  {
+   "id": 87,
+   "w": "establish",
+   "def": "to start or set up; to prove",
+   "ex": "The school was established in 1985.",
+   "ar": "يؤسس / يثبت",
+   "list": "AWL"
+  },
+  {
+   "id": 88,
+   "w": "export",
+   "def": "to sell goods to another country",
+   "ex": "Oman exports oil and natural gas.",
+   "ar": "يصدّر",
+   "list": "AWL"
+  },
+  {
+   "id": 89,
+   "w": "financial",
+   "def": "relating to money",
+   "ex": "Many students face financial problems.",
+   "ar": "مالي",
+   "list": "AWL"
+  },
+  {
+   "id": 90,
+   "w": "formula",
+   "def": "a fixed method or set of symbols",
+   "ex": "There is no simple formula for happiness.",
+   "ar": "صيغة / معادلة",
+   "list": "AWL"
+  },
+  {
+   "id": 91,
+   "w": "function",
+   "def": "the purpose of something; to work",
+   "ex": "The main function of the kidneys is to clean the blood.",
+   "ar": "وظيفة / يعمل",
+   "list": "AWL"
+  },
+  {
+   "id": 92,
+   "w": "identify",
+   "def": "to recognise or name something",
+   "ex": "The study identified three main causes.",
+   "ar": "يحدد / يتعرف على",
+   "list": "AWL"
+  },
+  {
+   "id": 93,
+   "w": "income",
+   "def": "money received from work or investments",
+   "ex": "Average income has risen since 2010.",
+   "ar": "دخل",
+   "list": "AWL"
+  },
+  {
+   "id": 94,
+   "w": "indicate",
+   "def": "to show or suggest",
+   "ex": "The results indicate a link between sleep and memory.",
+   "ar": "يشير إلى",
+   "list": "AWL"
+  },
+  {
+   "id": 95,
+   "w": "individual",
+   "def": "a single person; relating to one person",
+   "ex": "Each individual learns at a different speed.",
+   "ar": "فرد / فردي",
+   "list": "AWL"
+  },
+  {
+   "id": 96,
+   "w": "interpret",
+   "def": "to explain the meaning of something",
+   "ex": "The graph can be interpreted in two ways.",
+   "ar": "يفسّر",
+   "list": "AWL"
+  },
+  {
+   "id": 97,
+   "w": "involve",
+   "def": "to include as a necessary part",
+   "ex": "The job involves a lot of travel.",
+   "ar": "يتضمن / يُشرك",
+   "list": "AWL"
+  },
+  {
+   "id": 98,
+   "w": "issue",
+   "def": "an important problem or topic",
+   "ex": "Traffic is a major issue in big cities.",
+   "ar": "قضية / مسألة",
+   "list": "AWL"
+  },
+  {
+   "id": 99,
+   "w": "labour",
+   "def": "work, especially physical work; workers",
+   "ex": "The factory depends on cheap labour.",
+   "ar": "العمل / العمالة",
+   "list": "AWL"
+  },
+  {
+   "id": 100,
+   "w": "legal",
+   "def": "relating to the law; allowed by law",
+   "ex": "The legal age for driving is eighteen.",
+   "ar": "قانوني",
+   "list": "AWL"
+  },
+  {
+   "id": 101,
+   "w": "legislation",
+   "def": "a law or set of laws",
+   "ex": "New legislation bans smoking in public places.",
+   "ar": "تشريع",
+   "list": "AWL"
+  },
+  {
+   "id": 102,
+   "w": "major",
+   "def": "very important or large",
+   "ex": "Climate change is a major global problem.",
+   "ar": "رئيسي / كبير",
+   "list": "AWL"
+  },
+  {
+   "id": 103,
+   "w": "method",
+   "def": "a way of doing something",
+   "ex": "This method saves both time and money.",
+   "ar": "طريقة / أسلوب",
+   "list": "AWL"
+  },
+  {
+   "id": 104,
+   "w": "occur",
+   "def": "to happen",
+   "ex": "Most accidents occur near the home.",
+   "ar": "يحدث",
+   "list": "AWL"
+  },
+  {
+   "id": 105,
+   "w": "percent",
+   "def": "for or out of every hundred",
+   "ex": "Forty percent of students walk to school.",
+   "ar": "بالمئة",
+   "list": "AWL"
+  },
+  {
+   "id": 106,
+   "w": "period",
+   "def": "a length of time",
+   "ex": "Sales rose over the period 2010 to 2020.",
+   "ar": "فترة",
+   "list": "AWL"
+  },
+  {
+   "id": 107,
+   "w": "policy",
+   "def": "a plan of action agreed by a government or organisation",
+   "ex": "The government changed its housing policy.",
+   "ar": "سياسة",
+   "list": "AWL"
+  },
+  {
+   "id": 108,
+   "w": "principle",
+   "def": "a basic rule or belief",
+   "ex": "The principle of fairness is important in law.",
+   "ar": "مبدأ",
+   "list": "AWL"
+  },
+  {
+   "id": 109,
+   "w": "procedure",
+   "def": "the official way of doing something",
+   "ex": "Follow the safety procedure carefully.",
+   "ar": "إجراء",
+   "list": "AWL"
+  },
+  {
+   "id": 110,
+   "w": "process",
+   "def": "a series of actions to reach a result",
+   "ex": "The process takes about three weeks.",
+   "ar": "عملية",
+   "list": "AWL"
+  },
+  {
+   "id": 111,
+   "w": "require",
+   "def": "to need",
+   "ex": "The course requires a lot of reading.",
+   "ar": "يتطلب",
+   "list": "AWL"
+  },
+  {
+   "id": 112,
+   "w": "research",
+   "def": "detailed study to find new facts",
+   "ex": "Research shows that music helps concentration.",
+   "ar": "بحث",
+   "list": "AWL"
+  },
+  {
+   "id": 113,
+   "w": "response",
+   "def": "a reaction or answer",
+   "ex": "The response to the new app was positive.",
+   "ar": "استجابة / رد",
+   "list": "AWL"
+  },
+  {
+   "id": 114,
+   "w": "role",
+   "def": "the part someone or something plays",
+   "ex": "Parents play a key role in education.",
+   "ar": "دور",
+   "list": "AWL"
+  },
+  {
+   "id": 115,
+   "w": "section",
+   "def": "a part of something",
+   "ex": "Read the first section of the report.",
+   "ar": "قسم / جزء",
+   "list": "AWL"
+  },
+  {
+   "id": 116,
+   "w": "sector",
+   "def": "a part of the economy",
+   "ex": "The tourism sector employs many young people.",
+   "ar": "قطاع",
+   "list": "AWL"
+  },
+  {
+   "id": 117,
+   "w": "similar",
+   "def": "almost the same",
+   "ex": "The two cities have similar problems.",
+   "ar": "مشابه",
+   "list": "AWL"
+  },
+  {
+   "id": 118,
+   "w": "source",
+   "def": "where something comes from",
+   "ex": "The sun is a clean source of energy.",
+   "ar": "مصدر",
+   "list": "AWL"
+  },
+  {
+   "id": 119,
+   "w": "specific",
+   "def": "exact or particular",
+   "ex": "Give a specific example in your essay.",
+   "ar": "محدد",
+   "list": "AWL"
+  },
+  {
+   "id": 120,
+   "w": "structure",
+   "def": "the way parts are arranged",
+   "ex": "The essay has a clear structure.",
+   "ar": "هيكل / بنية",
+   "list": "AWL"
+  },
+  {
+   "id": 121,
+   "w": "theory",
+   "def": "an idea that explains something",
+   "ex": "The theory has not been proved yet.",
+   "ar": "نظرية",
+   "list": "AWL"
+  },
+  {
+   "id": 122,
+   "w": "achieve",
+   "def": "to succeed in doing something",
+   "ex": "She achieved a band 7 in Writing.",
+   "ar": "يحقق",
+   "list": "AWL"
+  },
+  {
+   "id": 123,
+   "w": "acquisition",
+   "def": "the act of getting something",
+   "ex": "Language acquisition is fastest in childhood.",
+   "ar": "اكتساب",
+   "list": "AWL"
+  },
+  {
+   "id": 124,
+   "w": "administration",
+   "def": "the management of an organisation",
+   "ex": "The school administration agreed to the plan.",
+   "ar": "إدارة",
+   "list": "AWL"
+  },
+  {
+   "id": 125,
+   "w": "affect",
+   "def": "to have an influence on",
+   "ex": "Lack of sleep affects concentration.",
+   "ar": "يؤثر على",
+   "list": "AWL"
+  },
+  {
+   "id": 126,
+   "w": "appropriate",
+   "def": "suitable for a situation",
+   "ex": "Use appropriate language in a formal letter.",
+   "ar": "مناسب",
+   "list": "AWL"
+  },
+  {
+   "id": 127,
+   "w": "aspect",
+   "def": "one part or feature of something",
+   "ex": "Cost is only one aspect of the problem.",
+   "ar": "جانب",
+   "list": "AWL"
+  },
+  {
+   "id": 128,
+   "w": "assistance",
+   "def": "help",
+   "ex": "The charity offers financial assistance.",
+   "ar": "مساعدة",
+   "list": "AWL"
+  },
+  {
+   "id": 129,
+   "w": "category",
+   "def": "a group of things of the same type",
+   "ex": "The products fall into three categories.",
+   "ar": "فئة",
+   "list": "AWL"
+  },
+  {
+   "id": 130,
+   "w": "commission",
+   "def": "an official group with a special task",
+   "ex": "A commission was set up to study the problem.",
+   "ar": "لجنة / هيئة",
+   "list": "AWL"
+  },
+  {
+   "id": 131,
+   "w": "community",
+   "def": "people living in one area or sharing interests",
+   "ex": "The new library serves the whole community.",
+   "ar": "مجتمع",
+   "list": "AWL"
+  },
+  {
+   "id": 132,
+   "w": "complex",
+   "def": "having many connected parts; difficult",
+   "ex": "The causes of poverty are complex.",
+   "ar": "معقد",
+   "list": "AWL"
+  },
+  {
+   "id": 133,
+   "w": "conclusion",
+   "def": "the end; a decision reached after thinking",
+   "ex": "The study reached a clear conclusion.",
+   "ar": "خاتمة / استنتاج",
+   "list": "AWL"
+  },
+  {
+   "id": 134,
+   "w": "conduct",
+   "def": "to organise and do",
+   "ex": "The researchers conducted a survey of 500 people.",
+   "ar": "يُجري",
+   "list": "AWL"
+  },
+  {
+   "id": 135,
+   "w": "consequence",
+   "def": "a result, often a bad one",
+   "ex": "Pollution has serious consequences for health.",
+   "ar": "عاقبة / نتيجة",
+   "list": "AWL"
+  },
+  {
+   "id": 136,
+   "w": "construction",
+   "def": "the building of something",
+   "ex": "Construction of the bridge took four years.",
+   "ar": "بناء / إنشاء",
+   "list": "AWL"
+  },
+  {
+   "id": 137,
+   "w": "consumer",
+   "def": "a person who buys goods",
+   "ex": "Consumers are buying more online.",
+   "ar": "مستهلك",
+   "list": "AWL"
+  },
+  {
+   "id": 138,
+   "w": "credit",
+   "def": "an arrangement to pay later; praise",
+   "ex": "Many people buy cars on credit.",
+   "ar": "ائتمان / فضل",
+   "list": "AWL"
+  },
+  {
+   "id": 139,
+   "w": "cultural",
+   "def": "relating to the customs and arts of a group",
+   "ex": "Museums protect cultural heritage.",
+   "ar": "ثقافي",
+   "list": "AWL"
+  },
+  {
+   "id": 140,
+   "w": "design",
+   "def": "to plan how something will look or work",
+   "ex": "The building was designed to save energy.",
+   "ar": "يصمم / تصميم",
+   "list": "AWL"
+  },
+  {
+   "id": 141,
+   "w": "distinction",
+   "def": "a clear difference",
+   "ex": "There is a distinction between weather and climate.",
+   "ar": "تمييز / فرق",
+   "list": "AWL"
+  },
+  {
+   "id": 142,
+   "w": "element",
+   "def": "a basic part of something",
+   "ex": "Trust is an essential element of friendship.",
+   "ar": "عنصر",
+   "list": "AWL"
+  },
+  {
+   "id": 143,
+   "w": "equation",
+   "def": "a mathematical statement that two things are equal",
+   "ex": "Solve the equation for x.",
+   "ar": "معادلة",
+   "list": "AWL"
+  },
+  {
+   "id": 144,
+   "w": "evaluate",
+   "def": "to judge the value of something",
+   "ex": "We need to evaluate the results carefully.",
+   "ar": "يقيّم",
+   "list": "AWL"
+  },
+  {
+   "id": 145,
+   "w": "feature",
+   "def": "an important part or quality",
+   "ex": "The main feature of the phone is its camera.",
+   "ar": "سمة / ميزة",
+   "list": "AWL"
+  },
+  {
+   "id": 146,
+   "w": "focus",
+   "def": "to give attention to one thing",
+   "ex": "The essay should focus on one main idea.",
+   "ar": "يركّز",
+   "list": "AWL"
+  },
+  {
+   "id": 147,
+   "w": "impact",
+   "def": "a strong effect",
+   "ex": "Social media has a big impact on teenagers.",
+   "ar": "تأثير",
+   "list": "AWL"
+  },
+  {
+   "id": 148,
+   "w": "injury",
+   "def": "harm to the body",
+   "ex": "Wearing a helmet reduces the risk of injury.",
+   "ar": "إصابة",
+   "list": "AWL"
+  },
+  {
+   "id": 149,
+   "w": "institute",
+   "def": "an organisation for study or research",
+   "ex": "She works at a research institute.",
+   "ar": "معهد",
+   "list": "AWL"
+  },
+  {
+   "id": 150,
+   "w": "investment",
+   "def": "money put into something to make a profit",
+   "ex": "Investment in education benefits everyone.",
+   "ar": "استثمار",
+   "list": "AWL"
+  },
+  {
+   "id": 151,
+   "w": "item",
+   "def": "a single thing in a list or group",
+   "ex": "Each item on the list has a price.",
+   "ar": "بند / عنصر",
+   "list": "AWL"
+  },
+  {
+   "id": 152,
+   "w": "maintenance",
+   "def": "keeping something in good condition",
+   "ex": "Old buildings need regular maintenance.",
+   "ar": "صيانة",
+   "list": "AWL"
+  },
+  {
+   "id": 153,
+   "w": "normal",
+   "def": "usual or ordinary",
+   "ex": "It is normal to feel nervous before an exam.",
+   "ar": "طبيعي / عادي",
+   "list": "AWL"
+  },
+  {
+   "id": 154,
+   "w": "obtain",
+   "def": "to get something",
+   "ex": "You must obtain a visa before you travel.",
+   "ar": "يحصل على",
+   "list": "AWL"
+  },
+  {
+   "id": 155,
+   "w": "participate",
+   "def": "to take part",
+   "ex": "Over 200 students participated in the study.",
+   "ar": "يشارك",
+   "list": "AWL"
+  },
+  {
+   "id": 156,
+   "w": "perceive",
+   "def": "to notice or understand in a certain way",
+   "ex": "Many people perceive cities as unsafe.",
+   "ar": "يدرك / يرى",
+   "list": "AWL"
+  },
+  {
+   "id": 157,
+   "w": "positive",
+   "def": "good or hopeful; showing agreement",
+   "ex": "The trial had positive results.",
+   "ar": "إيجابي",
+   "list": "AWL"
+  },
+  {
+   "id": 158,
+   "w": "potential",
+   "def": "possible in the future",
+   "ex": "Solar power has huge potential in Oman.",
+   "ar": "محتمل / إمكانية",
+   "list": "AWL"
+  },
+  {
+   "id": 159,
+   "w": "previous",
+   "def": "coming before",
+   "ex": "The previous year was warmer.",
+   "ar": "سابق",
+   "list": "AWL"
+  },
+  {
+   "id": 160,
+   "w": "primary",
+   "def": "main or most important; first",
+   "ex": "The primary aim is to reduce costs.",
+   "ar": "أساسي / ابتدائي",
+   "list": "AWL"
+  },
+  {
+   "id": 161,
+   "w": "purchase",
+   "def": "to buy",
+   "ex": "Most purchases are now made online.",
+   "ar": "يشتري / شراء",
+   "list": "AWL"
+  },
+  {
+   "id": 162,
+   "w": "range",
+   "def": "a group of different things; limits",
+   "ex": "The shop sells a wide range of books.",
+   "ar": "مدى / مجموعة",
+   "list": "AWL"
+  },
+  {
+   "id": 163,
+   "w": "region",
+   "def": "a large area of a country or the world",
+   "ex": "The region has very little rain.",
+   "ar": "منطقة / إقليم",
+   "list": "AWL"
+  },
+  {
+   "id": 164,
+   "w": "regulation",
+   "def": "an official rule",
+   "ex": "New regulations limit noise at night.",
+   "ar": "لائحة / نظام",
+   "list": "AWL"
+  },
+  {
+   "id": 165,
+   "w": "relevant",
+   "def": "connected to what is being discussed",
+   "ex": "Only include relevant information in your summary.",
+   "ar": "ذو صلة",
+   "list": "AWL"
+  },
+  {
+   "id": 166,
+   "w": "resident",
+   "def": "a person who lives in a place",
+   "ex": "Residents complained about the noise.",
+   "ar": "مقيم / ساكن",
+   "list": "AWL"
+  },
+  {
+   "id": 167,
+   "w": "resource",
+   "def": "something useful, such as money or materials",
+   "ex": "Water is a valuable resource in the desert.",
+   "ar": "مورد",
+   "list": "AWL"
+  },
+  {
+   "id": 168,
+   "w": "restrict",
+   "def": "to limit",
+   "ex": "The city restricts parking in the centre.",
+   "ar": "يقيّد",
+   "list": "AWL"
+  },
+  {
+   "id": 169,
+   "w": "security",
+   "def": "protection from danger",
+   "ex": "Airport security has become stricter.",
+   "ar": "أمن / أمان",
+   "list": "AWL"
+  },
+  {
+   "id": 170,
+   "w": "seek",
+   "def": "to try to find or get",
+   "ex": "Many graduates seek jobs abroad.",
+   "ar": "يسعى إلى / يبحث عن",
+   "list": "AWL"
+  },
+  {
+   "id": 171,
+   "w": "select",
+   "def": "to choose",
+   "ex": "Select the best answer from the list.",
+   "ar": "يختار",
+   "list": "AWL"
+  },
+  {
+   "id": 172,
+   "w": "site",
+   "def": "a place where something is or happens",
+   "ex": "The site of the new hospital has been chosen.",
+   "ar": "موقع",
+   "list": "AWL"
+  },
+  {
+   "id": 173,
+   "w": "strategy",
+   "def": "a plan to achieve a goal",
+   "ex": "Skimming is a useful reading strategy.",
+   "ar": "استراتيجية",
+   "list": "AWL"
+  },
+  {
+   "id": 174,
+   "w": "survey",
+   "def": "a set of questions asked to many people",
+   "ex": "A survey of parents showed strong support.",
+   "ar": "استطلاع / مسح",
+   "list": "AWL"
+  },
+  {
+   "id": 175,
+   "w": "traditional",
+   "def": "following old customs",
+   "ex": "Traditional houses stay cool in summer.",
+   "ar": "تقليدي",
+   "list": "AWL"
+  },
+  {
+   "id": 176,
+   "w": "transfer",
+   "def": "to move from one place to another",
+   "ex": "Money can be transferred by phone.",
+   "ar": "ينقل / تحويل",
+   "list": "AWL"
   }
  ],
  "placement": {
