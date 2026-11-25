@@ -7,11 +7,12 @@ const I18n = { ar: false };
 const tr = (en, ar) => (I18n.ar ? ar : en);
 
 /* ---------------------------------------------------------------- content */
-const C = { bank: [], lessons: [], reading: [], listening: [], writing: [], speaking: [], vocab: [], placeR: null, placeL: null };
+const C = { external: [], bank: [], lessons: [], reading: [], listening: [], writing: [], speaking: [], vocab: [], placeR: null, placeL: null };
 async function loadContent() {
   const r = await fetch('/shared/content.json', { cache: 'no-cache' }).catch(() => null);
   const d = r && r.ok ? await r.json() : await (await caches.match('/shared/content.json')).json();
   Object.assign(C, d);
+  C.external = d.external || [];
   C.placeR = d.placement && d.placement.reading; C.placeL = d.placement && d.placement.listening;
   for (const s of C.listening.concat(C.placeL ? [C.placeL] : [])) s.sub = s.ctx || '';
   for (const s of C.reading.concat(C.placeR ? [C.placeR] : [])) s.sub = s.topic || '';
@@ -118,7 +119,7 @@ const tcode = t => t.kind + '|' + t.id;
 const tparse = c => { const p = c.split('|'); return p.length === 2 ? T(p[0], p[1]) : null; };
 function troute(t) {
   return ({ read: 'paper/R/' + t.id, listen: 'paper/L/' + t.id, write: 'write/' + t.id, speak: 'speak/' + t.id, lesson: 'lesson/' + t.id, vocab: 'words',
-    drill: 'quiz/drill/' + t.id, check: 'quiz/check', mockR: 'paper/R/mock' + t.id, mockL: 'paper/L/mock' + t.id, mockW: 'write/mock', mockS: 'speak/mock' })[t.kind] || 'home';
+    drill: 'quiz/drill/' + t.id, check: 'quiz/check', ext: 'ext/' + t.id, mockR: 'paper/R/mock' + t.id, mockL: 'paper/L/mock' + t.id, mockW: 'write/mock', mockS: 'speak/mock' })[t.kind] || 'home';
 }
 function tlabel(t) {
   const sec = section(t.id);
@@ -131,6 +132,7 @@ function tlabel(t) {
     case 'vocab': return tr('Review 10 words', 'مراجعة 10 كلمات');
     case 'drill': return tr('Drill: ', 'تدريب: ') + skillName(t.id);
     case 'check': return tr('Checkpoint test (updates your plan)', 'اختبار متابعة (يحدّث خطتك)');
+    case 'ext': { const x = C.external.find(e => e.id === t.id); return tr('Full test online: ', 'اختبار كامل أونلاين: ') + (x ? x.title : t.id); }
     case 'mockR': return tr(`Mock ${t.id}: Reading, 60 min`, `محاكاة ${t.id}: القراءة، 60 دقيقة`);
     case 'mockL': return tr(`Mock ${t.id}: Listening`, `محاكاة ${t.id}: الاستماع`);
     case 'mockW': return tr('Mock: Writing, 60 min', 'محاكاة: الكتابة، 60 دقيقة');
@@ -138,7 +140,7 @@ function tlabel(t) {
   }
   return t.kind;
 }
-function tskill(t) { return ({ read: 'reading', listen: 'listening', write: 'writing', speak: 'speaking', mockR: 'reading', mockL: 'listening', mockW: 'writing', mockS: 'speaking' })[t.kind] || (t.kind === 'drill' ? t.id : t.kind === 'lesson' ? ((C.lessons.find(x => x.id === t.id) || {}).skill || 'foundation') : 'foundation'); }
+function tskill(t) { return ({ ext: 'reading', read: 'reading', listen: 'listening', write: 'writing', speak: 'speaking', mockR: 'reading', mockL: 'listening', mockW: 'writing', mockS: 'speaking' })[t.kind] || (t.kind === 'drill' ? t.id : t.kind === 'lesson' ? ((C.lessons.find(x => x.id === t.id) || {}).skill || 'foundation') : 'foundation'); }
 
 function weights() {
   const t = S.goal, m = {};
@@ -177,12 +179,17 @@ function generatePlan(total) {
   const w = weights(), slots = clamp(Math.floor(S.minutes / 15), 1, 4), pk = Picker();
   const credit = {}; for (const k in w) credit[k] = 0;
   const sum = Object.values(w).reduce((a, b) => a + b, 0), M = mocks();
-  let mockI = 0; const days = [];
+  let mockI = 0, extI = 0; const days = [];
   for (let d = 1; d <= total; d++) {
     const ph = phaseOf(d, total), out = [];
     if (d === total) { out.push(T('mockR', String(M)), T('mockL', String(M)), T('mockW'), T('mockS')); days.push(out); continue; }
     if (d % 7 === 0) {
-      if (ph === 'EXAM') { const m = (Math.floor(mockI / 2) % M) + 1; out.push(T(mockI % 2 === 0 ? 'mockR' : 'mockL', String(m))); mockI++; }
+      if (ph === 'EXAM') {
+        // Exam stage: every other week a full online test (real Reading and Listening scores), otherwise a mock in the app
+        if (C.external.length && extI % 2 === 0) { const pool = C.external.slice().sort((a, b) => (S.has('extdone', a.id) ? 1 : 0) - (S.has('extdone', b.id) ? 1 : 0)); out.push(T('ext', pool[Math.floor(extI / 2) % pool.length].id)); }
+        else { const m = (Math.floor(mockI / 2) % M) + 1; out.push(T(mockI % 2 === 0 ? 'mockR' : 'mockL', String(m))); mockI++; }
+        extI++;
+      }
       else out.push(T('check'));
     }
     const used = new Set();
@@ -292,4 +299,15 @@ function applyFullPlacement() {
   S.addStat('pl', 'foundation', P('fc'), P('ft')); S.addStat('pl', 'reading', P('rc'), P('rt')); S.addStat('pl', 'listening', P('lc'), P('lt'));
   S.addHistory(tr('Placement test', 'اختبار تحديد المستوى'), P('fc') + P('rc') + P('lc'), P('ft') + P('rt') + P('lt'), null);
   S.placed = true; S.restartProgram();
+}
+
+/* ---------------------------------------------------------------- full tests taken on ieltsonlinetests.com */
+/** Saves Reading and Listening scores (out of 40) from a full online test and moves the levels strongly, as for a full mock. */
+function recordExternal(id, r, l) {
+  const x = C.external.find(e => e.id === id); if (!x) return;
+  if (r != null) { S.addStat('sk', 'reading', r, 40); updateLevel('reading', r, 40, 'R'); }
+  if (l != null) { S.addStat('sk', 'listening', l, 40); updateLevel('listening', l, 40, 'L'); }
+  S.putMap('ext', id, (r ?? '') + '/' + (l ?? '')); S.add('extdone', id);
+  S.addHistory(x.title, (r || 0) + (l || 0), (r != null ? 40 : 0) + (l != null ? 40 : 0), null);
+  S.replanFuture();
 }

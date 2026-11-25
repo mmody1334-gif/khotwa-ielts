@@ -47,6 +47,7 @@ object Content {
     var writing = listOf<Writing>()
     var speaking = listOf<Speaking>()
     var vocab = listOf<Vocab>()
+    var external = listOf<External>()
     var placeR: Section? = null
     var placeL: Section? = null
     private var loaded = false
@@ -109,6 +110,12 @@ object Content {
                 val b = a.getJSONObject(it)
                 Vocab(b.optInt("id"), b.optString("w"), b.optString("def"), b.optString("ex"))
             }
+        }
+        o.optJSONArray("external")?.let { a ->
+            external = (0 until a.length()).map { i -> val x = a.getJSONObject(i)
+                External(x.optString("id"), x.optString("title"), x.optString("source"), x.optString("collection"), x.optString("full"), x.optString("testId"),
+                    x.optString("listening"), x.optString("reading"), x.optString("writing"), x.optString("speaking"),
+                    x.optJSONArray("speakingParts")?.let { sp -> (0 until sp.length()).map { sp.getInt(it) } }, x.optInt("speakingMinutes", 0)) }
         }
         o.optJSONObject("placement")?.let { p ->
             p.optJSONObject("reading")?.let { placeR = sections(JSONArray().put(it), 'R').first() }

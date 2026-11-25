@@ -12,7 +12,7 @@ shoot() {
   sleep 4
   adb exec-out screencap -p > "shots/$n-$2-${1//:/_}.png"
 }
-for r in home program plan "quiz:quick" lessons practice "paper:R:r7" "paper:L:l9" "write:a1" "speak:s1" words progress settings mocks; do shoot "$r" en; done
+for r in home program plan "ext:rmt1-1" "quiz:quick" lessons practice "paper:R:r7" "paper:L:l9" "write:a1" "speak:s1" words progress settings mocks; do shoot "$r" en; done
 for r in home program plan practice settings "lesson:roadmap" "paper:R:r11" "placement"; do shoot "$r" ar; done
 for k in 1 2 3 4 5; do
   i=$((i+1)); n=$(printf '%02d' $i)

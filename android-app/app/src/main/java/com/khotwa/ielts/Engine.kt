@@ -142,6 +142,7 @@ class PlanTask(val kind: String, val id: String) {
         "vocab" -> "words"
         "drill" -> "quiz:drill:$id"
         "check" -> "quiz:check"
+        "ext" -> "ext:$id"
         "mockR" -> "paper:R:mock$id"
         "mockL" -> "paper:L:mock$id"
         "mockW" -> "write:mock"
@@ -157,6 +158,7 @@ class PlanTask(val kind: String, val id: String) {
         "vocab" -> tr("Review 10 words", "مراجعة 10 كلمات")
         "drill" -> tr("Drill: ", "تدريب: ") + skillName(id)
         "check" -> tr("Checkpoint test (updates your plan)", "اختبار متابعة (يحدّث خطتك)")
+        "ext" -> tr("Full test online: ", "اختبار كامل أونلاين: ") + (Content.external.firstOrNull { it.id == id }?.title ?: id)
         "mockR" -> tr("Mock $id: Reading, 60 min", "محاكاة $id: القراءة، 60 دقيقة")
         "mockL" -> tr("Mock $id: Listening", "محاكاة $id: الاستماع")
         "mockW" -> tr("Mock: Writing, 60 min", "محاكاة: الكتابة، 60 دقيقة")
@@ -228,6 +230,7 @@ fun generatePlan(st: Store, total: Int): List<List<PlanTask>> {
     val sum = w.values.sum()
     val mocks = mockCount()
     var mockI = 0
+    var extI = 0
     val days = mutableListOf<List<PlanTask>>()
     for (d in 1..total) {
         val ph = phaseOf(d, total)
@@ -239,7 +242,14 @@ fun generatePlan(st: Store, total: Int): List<List<PlanTask>> {
             days += out; continue
         }
         if (d % 7 == 0) {
-            if (ph == Phase.EXAM) { val m = ((mockI / 2) % mocks) + 1; out += PlanTask(if (mockI % 2 == 0) "mockR" else "mockL", "$m"); mockI++ }
+            if (ph == Phase.EXAM) {
+                // Exam stage: every other week a full online test (real Reading and Listening scores), otherwise a mock in the app
+                if (Content.external.isNotEmpty() && extI % 2 == 0) {
+                    val pool = Content.external.sortedBy { if (st.has("extdone", it.id)) 1 else 0 }
+                    out += PlanTask("ext", pool[(extI / 2) % pool.size].id)
+                } else { val m = ((mockI / 2) % mocks) + 1; out += PlanTask(if (mockI % 2 == 0) "mockR" else "mockL", "$m"); mockI++ }
+                extI++
+            }
             else out += PlanTask("check", "")
         }
         val used = mutableSetOf<String>()

@@ -213,7 +213,41 @@ function vMocks() {
   let h = header(tr('Mock tests', 'اختبارات المحاكاة'));
   h += `<p>${tr('Timed, one go. Listening audio plays once. Scores are indicative only.', 'بالوقت ومرة واحدة. تسجيل الاستماع يُشغَّل مرة واحدة. الدرجات تقريبية فقط.')}</p><div class="stack">`;
   for (let m = 1; m <= mocks(); m++) h += `<div class="tile"><h2>${tr('Mock ' + m, 'محاكاة ' + m)}</h2><div class="actions">${go(tr('Reading, 60 min', 'القراءة، 60 دقيقة'), 'paper/R/mock' + m, 'primary')}${go(tr('Listening, 35 min', 'الاستماع، 35 دقيقة'), 'paper/L/mock' + m)}</div></div>`;
-  return h + `<div class="tile"><h2>${tr('Writing and Speaking', 'الكتابة والمحادثة')}</h2><div class="actions">${go(tr('Writing mock, 60 min', 'محاكاة الكتابة، 60 دقيقة'), 'write/mock', 'primary')}${go(tr('Speaking mock', 'محاكاة المحادثة'), 'speak/mock')}</div></div></div>`;
+  h += `<div class="tile"><h2>${tr('Writing and Speaking', 'الكتابة والمحادثة')}</h2><div class="actions">${go(tr('Writing mock, 60 min', 'محاكاة الكتابة، 60 دقيقة'), 'write/mock', 'primary')}${go(tr('Speaking mock', 'محاكاة المحادثة'), 'speak/mock')}</div></div></div>`;
+  if (C.external.length) {
+    h += `<h2 style="margin-top:18px">${tr('Full tests online', 'اختبارات كاملة أونلاين')}</h2><p class="small mute">${tr('Real-format full tests on ieltsonlinetests.com (free sign-in needed). Take them there, then enter your Reading and Listening scores here to update your levels.', 'اختبارات كاملة بشكل الامتحان على موقع ieltsonlinetests.com (يحتاج تسجيل دخول مجاني). حلّها هناك، ثم أدخل درجتك في القراءة والاستماع هنا لتحديث مستواك.')}</p><div class="stack">`;
+    h += C.external.map(x => { const sc = S.mapStr('ext', x.id); return tile(`<div class="row"><h3 class="en">${esc(x.title)}</h3>${S.has('extdone', x.id) ? pill(tr('Done', 'تم'), LIME) : ''}</div><small>${sc ? tr('Your scores (R/L): ', 'درجاتك (ق/س): ') + esc(sc) : tr('Listening 40 · Reading 40 · Writing 2 tasks · Speaking', 'استماع 40 · قراءة 40 · كتابة مهمتان · محادثة')}</small>`, 'ext/' + x.id); }).join('');
+    h += '</div>';
+  }
+  return h;
+}
+
+function vExt(id) {
+  const x = C.external.find(e => e.id === id); if (!x) return vMocks();
+  const a = (href, label, cls = '') => `<a class="btn ${cls}" href="${esc(href)}" target="_blank" rel="noopener">${label} ↗</a>`;
+  const [pr, pl] = (S.mapStr('ext', id) || '/').split('/');
+  let h = header(tr('Full test online', 'اختبار كامل أونلاين'));
+  h += `<h2 class="en">${esc(x.title)}</h2><p class="small mute">${tr('Source: ', 'المصدر: ')}<a href="${esc(x.collection)}" target="_blank" rel="noopener">${esc(x.source)}</a> · ${tr('test ', 'اختبار ')}${esc(x.testId)}</p>`;
+  h += `<div class="notice">${tr('The questions, audio and answers are on ieltsonlinetests.com, not in this app. You need a free account there. Sections run in order, and each starts with a short guidance video.', 'الأسئلة والصوت والإجابات على موقع ieltsonlinetests.com وليست في هذا التطبيق. تحتاج حسابًا مجانيًا هناك. الأجزاء بالترتيب، وكل جزء يبدأ بفيديو إرشادي قصير.')}</div>`;
+  h += `<div class="actions">${a(x.full, tr('Start the full test', 'ابدأ الاختبار الكامل'), 'primary')}</div>`;
+  h += `<div class="stack">
+    <div class="tile"><b>${tr('Listening', 'الاستماع')}</b> · ${tr('40 questions, 4 parts, about 32 min. Audio plays on the site only.', '40 سؤالًا، 4 أجزاء، حوالي 32 دقيقة. الصوت على الموقع فقط.')}<div class="actions">${a(x.listening, tr('Open', 'افتح'))}</div></div>
+    <div class="tile"><b>${tr('Reading', 'القراءة')}</b> · ${tr('40 questions, 3 passages (13, 13, 14), 60 min.', '40 سؤالًا، 3 قطع (13، 13، 14)، 60 دقيقة.')}<div class="actions">${a(x.reading, tr('Open', 'افتح'))}</div></div>
+    <div class="tile"><b>${tr('Writing', 'الكتابة')}</b> · ${tr('2 tasks, 60 min. Check your essays with "Estimate my level" in the app\'s Writing practice.', 'مهمتان، 60 دقيقة. قيّم مقالك بزر «قدّر مستواي» في تدريب الكتابة بالتطبيق.')}<div class="actions">${a(x.writing, tr('Open', 'افتح'))}</div></div>
+    <div class="tile"><b>${tr('Speaking', 'المحادثة')}</b> · ${tr('With a live examiner by video call; questions are not published as text.', 'مع ممتحن مباشر بمكالمة فيديو؛ الأسئلة لا تُنشر كنص.')}${x.speakingParts ? ` ${tr('Parts', 'الأجزاء')}: ${x.speakingParts.join(' + ')}${x.speakingMinutes ? ' · ' + x.speakingMinutes + tr(' min', ' دقيقة') : ''}` : ''}<div class="actions">${a(x.speaking, tr('Open', 'افتح'))}</div></div>
+  </div>`;
+  const inp = (k, v) => `<input class="inp" id="${k}" type="number" inputmode="numeric" min="0" max="40" value="${esc(v || '')}" style="max-width:110px;display:inline-block">`;
+  h += `<div class="tile c-fnd" style="margin-top:12px"><h3>${tr('Enter your scores', 'أدخل درجاتك')}</h3><p class="small">${tr('After you submit on the site, enter how many you got right out of 40. Leave a box empty if you did not take that section.', 'بعد التسليم في الموقع، أدخل عدد الإجابات الصحيحة من 40. اترك الخانة فارغة إذا لم تحل هذا الجزء.')}</p>
+    <div class="row" style="justify-content:flex-start;gap:16px"><label>${tr('Reading', 'القراءة')} ${inp('xr', pr)} / 40</label><label>${tr('Listening', 'الاستماع')} ${inp('xl', pl)} / 40</label></div>
+    <div class="actions">${btn(tr('Save and update my levels', 'احفظ وحدّث مستواي'), () => {
+      const v = k => { const t = $('#' + k).value.trim(); if (t === '') return null; const n = Math.round(+t); return n >= 0 && n <= 40 ? n : NaN; };
+      const r = v('xr'), l = v('xl');
+      if (Number.isNaN(r) || Number.isNaN(l) || (r == null && l == null)) { toast(tr('Enter a number from 0 to 40.', 'أدخل رقمًا من 0 إلى 40.')); return; }
+      recordExternal(id, r, l);
+      V.saved = tr(`Saved. ${r != null ? 'Reading band about ' + b1(accBand(r, 40, 'R')) + '. ' : ''}${l != null ? 'Listening band about ' + b1(accBand(l, 40, 'L')) + '. ' : ''}Your plan was updated.`, `تم الحفظ. ${r != null ? 'القراءة تقريبًا ' + b1(accBand(r, 40, 'R')) + '. ' : ''}${l != null ? 'الاستماع تقريبًا ' + b1(accBand(l, 40, 'L')) + '. ' : ''}تم تحديث خطتك.`);
+      rerender();
+    }, 'primary')}</div>${V.saved ? `<p><b>${esc(V.saved)}</b></p>` : ''}</div>`;
+  return h + `<p class="small mute">${tr('Independent links. Khotwa is not connected to ieltsonlinetests.com.', 'روابط مستقلة. خطوة غير مرتبطة بموقع ieltsonlinetests.com.')}</p>`;
 }
 
 /* ---------------------------------------------------------------- quiz (drill, quick, checkpoint) */
@@ -543,7 +577,7 @@ function render(same) {
   try {
     html = ({
       home: vHome, program: vProgram, plan: vPlan, lessons: vLessons, practice: vPractice, mocks: vMocks, words: vWords, progress: vProgress, about: vAbout, settings: vSettings, results: vResults, placement: vPlacement,
-      lesson: () => vLesson(p[1]), quiz: () => p[1] === 'placement' ? vPlacement() : vQuiz(p[1] || 'quick', p[2] || ''), paper: () => vPaper(p[1] || 'R', p[2] || ''), write: () => vWrite(p[1] || ''), speak: () => vSpeak(p[1] || ''),
+      lesson: () => vLesson(p[1]), ext: () => vExt(p[1] || ''), quiz: () => p[1] === 'placement' ? vPlacement() : vQuiz(p[1] || 'quick', p[2] || ''), paper: () => vPaper(p[1] || 'R', p[2] || ''), write: () => vWrite(p[1] || ''), speak: () => vSpeak(p[1] || ''),
     }[r] || vHome)();
   } catch (e) { console.error(e); html = `<div class="notice error">${esc(e.message)}</div>`; }
   const main = $('#main');

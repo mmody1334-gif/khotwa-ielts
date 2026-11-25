@@ -291,7 +291,7 @@ fun PracticeScreen(st: Store, nav: Nav) {
 }
 
 @Composable
-fun MocksScreen(nav: Nav) {
+fun MocksScreen(st: Store, nav: Nav) {
     Screen(tr("Mock tests", "اختبارات المحاكاة"), { nav.back() }) {
         Page {
             Text(tr("Timed, one go. Listening audio plays once. Scores are indicative only.", "بالوقت ومرة واحدة. تسجيل الاستماع يُشغَّل مرة واحدة. الدرجات تقريبية فقط."), style = Body)
@@ -309,6 +309,7 @@ fun MocksScreen(nav: Nav) {
                 NButton(tr("Writing mock, 60 min", "محاكاة الكتابة، 60 دقيقة"), Modifier.fillMaxWidth(), Mustard) { nav.go("write:mock") }
                 NButton(tr("Speaking mock", "محاكاة المحادثة"), Modifier.fillMaxWidth(), Coral) { nav.go("speak:mock") }
             }
+            ExternalList(st, nav)
         }
     }
 }
