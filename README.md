@@ -37,3 +37,5 @@ Run locally: `python3 -m http.server` in this folder.
 2. Pages project `khotwa-ielts` > Settings > Bindings (Functions) > Add D1 binding: variable `DB`, database `khotwa`.
 3. Get a free key at https://aistudio.google.com/apikey, then Pages project > Settings > Variables and secrets > add secret `GEMINI_API_KEY`. Optional: `GEMINI_MODEL`, `AI_DAILY_LIMIT` (default 15 per IP per day).
 4. Redeploy. Check https://khotwa-ielts.pages.dev/api/health shows `"db":true,"ai":true`.
+
+Auto-deploy: every push to main is deployed to Cloudflare Pages (khotwa-ielts) by .github/workflows/deploy.yml.
