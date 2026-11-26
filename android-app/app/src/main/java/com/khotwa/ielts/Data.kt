@@ -34,12 +34,13 @@ class Lesson(val id: String, val title: String, val skill: String, val time: Str
 }
 class Writing(val id: String, val type: String, val task: Int, val title: String, val min: Int, val minutes: Int, val prompt: String, val chart: JSONObject?, val tips: List<String>, val model: String?)
 class Speaking(val id: String, val topic: String, val p1: List<String>, val cue: String, val bullets: List<String>, val p3: List<String>)
-class Vocab(val id: Int, val w: String, val def: String, val ex: String)
+class Vocab(val id: Int, val w: String, val def: String, val ex: String, val ar: String = "")
 
 private fun JSONArray?.strs(): List<String> = if (this == null) emptyList() else (0 until length()).map { getString(it) }
 private fun JSONArray?.pairs(): List<Pair<String, String>> = if (this == null) emptyList() else (0 until length()).map { val p = getJSONArray(it); p.getString(0) to p.getString(1) }
 
 object Content {
+    lateinit var store: Store
     var bank = listOf<BankQ>()
     var lessons = listOf<Lesson>()
     var reading = listOf<Section>()
@@ -47,6 +48,7 @@ object Content {
     var writing = listOf<Writing>()
     var speaking = listOf<Speaking>()
     var vocab = listOf<Vocab>()
+    var external = listOf<External>()
     var placeR: Section? = null
     var placeL: Section? = null
     private var loaded = false
@@ -107,8 +109,14 @@ object Content {
         o.getJSONArray("vocab").let { a ->
             vocab = (0 until a.length()).map {
                 val b = a.getJSONObject(it)
-                Vocab(b.optInt("id"), b.optString("w"), b.optString("def"), b.optString("ex"))
+                Vocab(b.optInt("id"), b.optString("w"), b.optString("def"), b.optString("ex"), b.optString("ar"))
             }
+        }
+        o.optJSONArray("external")?.let { a ->
+            external = (0 until a.length()).map { i -> val x = a.getJSONObject(i)
+                External(x.optString("id"), x.optString("title"), x.optString("source"), x.optString("collection"), x.optString("full"), x.optString("testId"),
+                    x.optString("listening"), x.optString("reading"), x.optString("writing"), x.optString("speaking"),
+                    x.optJSONArray("speakingParts")?.let { sp -> (0 until sp.length()).map { sp.getInt(it) } }, x.optInt("speakingMinutes", 0)) }
         }
         o.optJSONObject("placement")?.let { p ->
             p.optJSONObject("reading")?.let { placeR = sections(JSONArray().put(it), 'R').first() }
@@ -155,6 +163,13 @@ class Store(private val ctx: Context) {
     /** Re-plans from today onwards without moving the day count. */
     fun replanFuture() { val d = (today() - start + 1).toString(); val m = map("dp"); val keep = JSONObject(); if (m.has(d)) keep.put(d, m.get(d)); root.put("dp", keep); save() }
     fun bump(k: String, key: String) = putMap(k, key, mapInt(k, key) + 1)
+    /** Exam date as a day number (same as today()); 0 when not set. Same key as the web app. */
+    var exam: Int
+        get() = r().optInt("exam", 0)
+        set(v) { if (v <= 0) root.remove("exam") else root.put("exam", v); save() }
+    fun mapKeys(k: String): List<String> = map(k).keys().asSequence().toList()
+    fun resetKey(k: String) { root.remove(k); save() }
+    fun removeKey(k: String, key: String) { val m = map(k); m.remove(key); root.put(k, m); save() }
     var placed: Boolean
         get() = r().optBoolean("placed", false)
         set(v) { root.put("placed", v); save() }

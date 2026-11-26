@@ -53,6 +53,7 @@ fun QuizScreen(kind: String, arg: String, st: Store, nav: Nav) {
             if (kind == "placement") st.addStat("pl", sk, c, sub.size)
             else updateLevel(st, sk, c, sub.size, if (sk == "listening") 'L' else 'R')
         }
+        qs.forEachIndexed { i, q -> if (kind != "placement" && ans[i] != q.answer) addMistake(st, "b${q.id}") }
         if (kind == "placement") applyPlacement(st, per["foundation"] ?: (0 to 0), per["reading"] ?: (0 to 0), per["listening"] ?: (0 to 0))
         else if (kind == "check") st.replanFuture()
         val title = when (kind) { "placement" -> tr("Placement test", "اختبار تحديد المستوى"); "quick" -> tr("Quick practice", "تدريب سريع"); "check" -> tr("Checkpoint test", "اختبار متابعة"); else -> tr("Drill: ", "تدريب: ") + skillName(arg) }
@@ -110,10 +111,10 @@ fun PaperScreen(kind: Char, id: String, st: Store, nav: Nav, act: MainActivity) 
     var played by remember { mutableStateOf(false) }
     var speaking by remember { mutableStateOf(false) }
     val minutes = if (kind == 'R') (if (mockN > 0) 60 else 20) else (if (mockN > 0) 35 else 0)
-    DisposableEffect(Unit) { onDispose { act.tts?.stop() } }
+    DisposableEffect(Unit) { onDispose { act.stopAudio() } }
     fun finish() {
         if (done) return
-        done = true; act.tts?.stop()
+        done = true; act.stopAudio()
         val items = mutableListOf<RItem>()
         for (s in secs) for (g in s.groups) for (q in g.qs) {
             val a = ans["${s.id}|${q.n}"]
@@ -122,6 +123,7 @@ fun PaperScreen(kind: Char, id: String, st: Store, nav: Nav, act: MainActivity) 
             items.add(RItem("${q.n}. ${q.q}", yours, correctText(g, q), ok, q.w, q.t))
             st.addStat("ty", q.t, if (ok) 1 else 0, 1)
             st.addStat("sk", if (kind == 'R') "reading" else "listening", if (ok) 1 else 0, 1)
+            if (!ok && !a.isNullOrBlank()) addMistake(st, "s${s.id}|${q.n}")
         }
         val score = items.count { it.ok }
         val b = band(score, items.size, kind)
@@ -149,6 +151,7 @@ fun PaperScreen(kind: Char, id: String, st: Store, nav: Nav, act: MainActivity) 
                     Spacer(Modifier.height(8.dp))
                     Row {
                         NButton(if (speaking) tr("Playing...", "يعمل...") else if (played && mockN > 0) tr("Played", "تم التشغيل") else tr("Play audio", "شغّل الصوت"), bg = Lime, enabled = !speaking && !(played && mockN > 0)) {
+                            if (act.playAsset(s.id)) { speaking = true; played = true; return@NButton }
                             val t = act.tts
                             if (t == null || !act.ttsReady) return@NButton
                             speaking = true; played = true
@@ -163,7 +166,7 @@ fun PaperScreen(kind: Char, id: String, st: Store, nav: Nav, act: MainActivity) 
                             t.setPitch(1.0f)
                         }
                         Spacer(Modifier.width(8.dp))
-                        if (mockN == 0) NButton(tr("Stop", "إيقاف"), bg = Card, enabled = speaking) { act.tts?.stop(); speaking = false }
+                        if (mockN == 0) NButton(tr("Stop", "إيقاف"), bg = Card, enabled = speaking) { act.stopAudio(); speaking = false }
                     }
                     if (!act.ttsReady || !act.ttsEnglish) {
                         Text(tr("No English voice is ready on this phone. Install English (UK) in voice settings.", "لا يوجد صوت إنجليزي جاهز في هاتفك. ثبّت English (UK) من إعدادات الصوت."), style = Small.copy(color = Ink))
@@ -171,7 +174,7 @@ fun PaperScreen(kind: Char, id: String, st: Store, nav: Nav, act: MainActivity) 
                     }
                 }
                 LaunchedEffect(speaking) {
-                    while (speaking) { kotlinx.coroutines.delay(600); if (act.tts?.isSpeaking != true) { kotlinx.coroutines.delay(600); if (act.tts?.isSpeaking != true) speaking = false } }
+                    while (speaking) { kotlinx.coroutines.delay(600); if (!act.audioBusy()) { kotlinx.coroutines.delay(600); if (!act.audioBusy()) speaking = false } }
                 }
             }
             for (g in s.groups) {

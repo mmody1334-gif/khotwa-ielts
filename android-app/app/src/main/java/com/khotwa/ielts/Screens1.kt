@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -60,6 +61,24 @@ fun HomeScreen(st: Store, nav: Nav) {
         Text(tr("A personal IELTS program that adapts to your results.", "برنامج آيلتس شخصي يتكيّف مع نتائجك."), style = Body)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Tag(typeName(st.type), Lime); Tag(tr("Goal ", "الهدف ") + st.goal, Mustard); Tag(tr("${st.minutes} min", "${st.minutes} دقيقة"), Sky); Tag(tr("Streak ", "متتالية ") + st.streak(), Coral)
+            if (st.exam >= today()) Tag(tr("Exam in ${st.exam - today()} days", "الامتحان بعد ${st.exam - today()} يوم"), Lime)
+        }
+        val act = LocalContext.current as MainActivity
+        LaunchedEffect(Unit) {
+            // check for a newer APK at most once a day
+            if (st.mapInt("cfg", "updChk") != today()) { st.putMap("cfg", "updChk", today()); act.updateName = checkUpdate(act) }
+        }
+        act.updateName?.let { v ->
+            NCard(bg = Lime, onClick = { act.startActivity(Intent(Intent.ACTION_VIEW, android.net.Uri.parse("$SITE/khotwa-ielts.apk"))) }) {
+                Text(tr("Update available ($v)", "تحديث جديد متاح ($v)"), style = H3)
+                Text(tr("Tap to download it. It installs over this version and keeps your progress.", "اضغط للتنزيل. يتثبت فوق النسخة الحالية ويحافظ على تقدّمك."), style = Small.copy(color = Ink))
+            }
+        }
+        AssignmentsCard(st, nav)
+        val due = mistakesDue(st).size
+        if (due > 0) NCard(bg = Coral, onClick = { nav.go("review") }) {
+            Text(tr("$due mistakes to review", "$due أخطاء للمراجعة"), style = H3)
+            Text(tr("Questions you got wrong come back until you get them right twice.", "الأسئلة التي أخطأت فيها ترجع حتى تجيبها صح مرتين."), style = Small.copy(color = Ink))
         }
         if (!st.placed) {
             NCard(bg = Lime, onClick = { nav.go("placement") }) {
@@ -114,8 +133,26 @@ fun ProgramScreen(st: Store, nav: Nav) {
                 } else {
                     Text(tr("Gap: ${pr.gap} band. Program: about ${pr.weeks} weeks (${pr.hours.toInt()} study hours at ${st.minutes} min a day, 6 days a week).",
                         "الفرق: ${pr.gap} درجة. البرنامج: حوالي ${pr.weeks} أسبوع (${pr.hours.toInt()} ساعة مذاكرة بمعدل ${st.minutes} دقيقة يوميًا، 6 أيام في الأسبوع)."), style = Body)
-                    Text(tr("Expected finish: ", "الانتهاء المتوقع: ") + dateIn(pr.days - day), style = Label)
+                    if (pr.exam == null) Text(tr("Expected finish: ", "الانتهاء المتوقع: ") + dateIn(pr.days - day), style = Label)
                     if (pr.weeks >= 26) Text(tr("That is long. More minutes a day shortens it a lot.", "المدة طويلة. زيادة الدقائق اليومية تختصرها كثيرًا."), style = Small.copy(color = Ink))
+                }
+            }
+            pr.exam?.let { e ->
+                NCard(bg = if (e.fits) Lime else Coral) {
+                    Text(tr("Exam in ${e.daysLeft} days", "الامتحان بعد ${e.daysLeft} يوم"), style = H3)
+                    Text(if (e.fits) tr("Your target fits: about ${e.availHours} study hours are available at ${st.minutes} min a day.", "هدفك مناسب للوقت: حوالي ${e.availHours} ساعة مذاكرة متاحة بمعدل ${st.minutes} دقيقة يوميًا.")
+                        else tr("Not enough time for ${pr.target} at ${st.minutes} min a day. Options: study about ${e.needMinutes} min a day, or aim for about ${e.reachable} by the exam date.", "الوقت غير كافٍ للوصول إلى ${pr.target} بمعدل ${st.minutes} دقيقة يوميًا. الخيارات: ذاكر حوالي ${e.needMinutes} دقيقة يوميًا، أو استهدف حوالي ${e.reachable} بحلول موعد الامتحان."), style = Body)
+                    if (!e.fits) Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        val m = minOf(60, ((e.needMinutes + 14) / 15) * 15)
+                        if (e.needMinutes <= 60) NButton(tr("Study $m min a day", "ذاكر $m دقيقة يوميًا"), bg = Card) { st.minutes = m; st.replanFuture() }
+                        if (e.reachable < pr.target) NButton(tr("Set target ${e.reachable}", "اجعل الهدف ${e.reachable}"), bg = Card) { st.goal = maxOf(5.0, e.reachable); st.replanFuture() }
+                    }
+                }
+            }
+            weakType(st)?.let { w ->
+                NCard(bg = Coral) {
+                    Text(tr("Weak spot: ", "نقطة ضعف: ") + QTYPE_NAMES[w.type], style = H3)
+                    Text(tr("${(w.acc * 100).toInt()}% correct in ${w.n} answers. Your plan now picks passages with this question type more often.", "${(w.acc * 100).toInt()}% صحيحة من ${w.n} إجابة. خطتك الآن تختار قطعًا فيها هذا النوع أكثر."), style = Small.copy(color = Ink))
                 }
             }
             NCard {
@@ -263,6 +300,10 @@ fun PracticeScreen(st: Store, nav: Nav) {
             NCard(bg = Lime, onClick = { nav.go("quiz:quick") }) { Text(tr("Quick practice", "تدريب سريع"), style = H2); Text(tr("12 mixed questions, 15 minutes.", "12 سؤال متنوع في 15 دقيقة."), style = Body) }
             NCard(bg = Mustard, onClick = { nav.go("quiz:check") }) { Text(tr("Checkpoint test", "اختبار متابعة"), style = H2); Text(tr("16 questions. Updates your levels and plan.", "16 سؤال، يحدّث مستوياتك وخطتك."), style = Body) }
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                NCard(Modifier.weight(1f), bg = Sky, onClick = { nav.go("dict") }) { Text(tr("Dictation", "الإملاء"), style = H3); Text(tr("Names, numbers, dates by audio.", "أسماء وأرقام وتواريخ بالصوت."), style = Small.copy(color = Ink)) }
+                NCard(Modifier.weight(1f), bg = Coral, onClick = { nav.go("review") }) { Text(tr("My mistakes", "أخطائي"), style = H3); Text(tr("${mistakesDue(st).size} due · ${mistakes(st).size} saved", "${mistakesDue(st).size} للمراجعة · ${mistakes(st).size} محفوظة"), style = Small.copy(color = Ink)) }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 for (sk in listOf("foundation", "reading", "listening")) NButton(if (sk == "foundation") tr("Grammar", "القواعد") else skillName(sk), Modifier.weight(1f), Card) { nav.go("quiz:drill:$sk") }
             }
             Text(tr("By question type", "حسب نوع السؤال"), style = H2)
@@ -291,7 +332,7 @@ fun PracticeScreen(st: Store, nav: Nav) {
 }
 
 @Composable
-fun MocksScreen(nav: Nav) {
+fun MocksScreen(st: Store, nav: Nav) {
     Screen(tr("Mock tests", "اختبارات المحاكاة"), { nav.back() }) {
         Page {
             Text(tr("Timed, one go. Listening audio plays once. Scores are indicative only.", "بالوقت ومرة واحدة. تسجيل الاستماع يُشغَّل مرة واحدة. الدرجات تقريبية فقط."), style = Body)
@@ -309,6 +350,7 @@ fun MocksScreen(nav: Nav) {
                 NButton(tr("Writing mock, 60 min", "محاكاة الكتابة، 60 دقيقة"), Modifier.fillMaxWidth(), Mustard) { nav.go("write:mock") }
                 NButton(tr("Speaking mock", "محاكاة المحادثة"), Modifier.fillMaxWidth(), Coral) { nav.go("speak:mock") }
             }
+            ExternalList(st, nav)
         }
     }
 }
@@ -334,7 +376,7 @@ fun WordsScreen(st: Store, nav: Nav) {
                     Box(Modifier.fillMaxWidth().heightIn(min = 200.dp), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Text(w.w, style = H1)
-                            if (flip) { Spacer(Modifier.height(10.dp)); Text(w.def, style = H3); Spacer(Modifier.height(6.dp)); Text(w.ex, style = Body) }
+                            if (flip) { Spacer(Modifier.height(10.dp)); Text(w.def, style = H3); if (w.ar.isNotBlank()) Text(w.ar, style = H3.copy(color = Green)); Spacer(Modifier.height(6.dp)); Text(w.ex, style = Body) }
                             else Text(tr("Tap to flip", "اضغط للقلب"), style = Small)
                         }
                     }
@@ -424,9 +466,51 @@ fun SettingsScreen(st: Store, nav: Nav) {
                     Row { for (g in listOf(5.0, 5.5, 6.0, 6.5)) Chip("$g", st.goal == g) { st.goal = g; st.replanFuture() } }
                     Row { for (g in listOf(7.0, 7.5, 8.0)) Chip("$g", st.goal == g) { st.goal = g; st.replanFuture() } }
                 }
+                Text(tr("Exam date (optional)", "موعد الامتحان (اختياري)"), style = H3)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    NButton(if (st.exam > 0) java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale.UK).apply { timeZone = java.util.TimeZone.getTimeZone("UTC") }.format(java.util.Date(st.exam * 86400000L)) else tr("Pick a date", "اختر التاريخ"), bg = Card) {
+                        val c = java.util.Calendar.getInstance(); c.add(java.util.Calendar.DAY_OF_YEAR, 60)
+                        android.app.DatePickerDialog(ctx, { _, y, m, d ->
+                            val u = java.util.Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")); u.clear(); u.set(y, m, d)
+                            val day = (u.timeInMillis / 86400000L).toInt()
+                            if (day > today()) { st.exam = day; st.replanFuture() }
+                        }, c.get(java.util.Calendar.YEAR), c.get(java.util.Calendar.MONTH), c.get(java.util.Calendar.DAY_OF_MONTH)).show()
+                    }
+                    if (st.exam > 0) { Spacer(Modifier.width(8.dp)); NButton(tr("Clear", "مسح"), bg = Card) { st.exam = 0; st.replanFuture() } }
+                }
                 Text(tr("Minutes per day", "دقائق يوميًا"), style = H3)
                 Row { for (m in listOf(15, 30, 45, 60)) Chip("$m", st.minutes == m) { st.minutes = m; st.replanFuture() } }
                 Text(tr("Changing these re-plans the coming days.", "تغيير هذه الإعدادات يعيد تخطيط الأيام القادمة."), style = Small)
+            }
+            ClassCard(st)
+            NCard {
+                Text(tr("Daily reminder", "تذكير يومي"), style = H3)
+                val on = st.mapInt("cfg", "rem") == 1
+                val h = st.mapInt("cfg", "remH", 20); val m = st.mapInt("cfg", "remM", 0)
+                val notifPerm = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.RequestPermission()) { }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Chip(tr("Off", "إيقاف"), !on) { st.putMap("cfg", "rem", 0); Reminder.cancel(ctx) }
+                    Chip(tr("On", "تشغيل"), on) {
+                        if (android.os.Build.VERSION.SDK_INT >= 33) notifPerm.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                        st.putMap("cfg", "rem", 1); Reminder.schedule(ctx, h, m)
+                    }
+                    if (on) NButton(String.format(java.util.Locale.UK, "%02d:%02d", h, m), bg = Card) {
+                        android.app.TimePickerDialog(ctx, { _, hh, mm -> st.putMap("cfg", "remH", hh); st.putMap("cfg", "remM", mm); Reminder.schedule(ctx, hh, mm) }, h, m, true).show()
+                    }
+                }
+                Text(tr("A notification at this time each day with your plan and mistakes to review.", "إشعار في هذا الوقت يوميًا بخطتك والأخطاء التي تحتاج مراجعة."), style = Small)
+            }
+            NCard {
+                Text(tr("App version", "إصدار التطبيق"), style = H3)
+                val act = ctx as MainActivity
+                var upd by remember { mutableStateOf("") }
+                val scope = rememberCoroutineScope()
+                Text(tr("Installed: ", "المثبت: ") + installedVersion(ctx), style = Small)
+                NButton(tr("Check for updates", "ابحث عن تحديث"), bg = Card) {
+                    upd = tr("Checking...", "جارٍ البحث...")
+                    scope.launch { val v = checkUpdate(ctx); act.updateName = v; upd = if (v != null) tr("Version $v is available. See the card on Home.", "الإصدار $v متاح. شاهد البطاقة في الرئيسية.") else tr("You have the latest version (or no internet).", "لديك آخر إصدار (أو لا يوجد إنترنت).") }
+                }
+                if (upd.isNotEmpty()) Text(upd, style = Label)
             }
             NCard {
                 Text(tr("Listening voice", "صوت الاستماع"), style = H3)

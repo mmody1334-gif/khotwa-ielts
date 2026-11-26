@@ -91,7 +91,9 @@ fun updateLevel(st: Store, sk: String, c: Int, t: Int, kind: Char = 'R') {
 
 // ---------------------------------------------------------------- the program
 
-class Program(val current: Double, val target: Double, val days: Int, val hours: Double) {
+class ExamFit(val daysLeft: Int, val availHours: Int, val fits: Boolean, val reachable: Double, val needMinutes: Int)
+
+class Program(val current: Double, val target: Double, val days: Int, val hours: Double, val exam: ExamFit? = null) {
     val weeks get() = (days + 6) / 7
     val gap get() = max(0.0, target - current)
 }
@@ -109,8 +111,20 @@ fun program(st: Store): Program {
     var h = 0.0; var b = cur
     while (b < tgt - 0.01) { h += hoursForHalfBand(b); b += 0.5 }
     val perWeek = st.minutes / 60.0 * 6
-    val days = if (h == 0.0 || !st.placed) 28 else (ceil(h / perWeek) * 7).toInt().coerceIn(28, 364)
-    return Program(cur, tgt, days, h)
+    var days = if (h == 0.0 || !st.placed) 28 else (ceil(h / perWeek) * 7).toInt().coerceIn(28, 364)
+    // With an exam date the program ends the day before the exam. It also says what fits in that time.
+    val examDay = st.exam
+    val left = examDay - today()
+    var fit: ExamFit? = null
+    if (st.placed && examDay > 0 && left > 0) {
+        val start = if (st.start == 0) today() else st.start
+        days = max(7, examDay - start)
+        val avail = left / 7.0 * perWeek
+        var reach = cur; var used = 0.0
+        while (reach < 9 && used + hoursForHalfBand(reach) <= avail) { used += hoursForHalfBand(reach); reach += 0.5 }
+        fit = ExamFit(left, Math.round(avail).toInt(), avail >= h, reach, if (h > 0) ceil(h * 60 / (left / 7.0 * 6)).toInt() else 0)
+    }
+    return Program(cur, tgt, days, h, fit)
 }
 
 enum class Phase { BUILD, PRACTICE, EXAM }
@@ -140,8 +154,11 @@ class PlanTask(val kind: String, val id: String) {
         "speak" -> "speak:$id"
         "lesson" -> "lesson:$id"
         "vocab" -> "words"
+        "review" -> "review"
+        "dict" -> "dict"
         "drill" -> "quiz:drill:$id"
         "check" -> "quiz:check"
+        "ext" -> "ext:$id"
         "mockR" -> "paper:R:mock$id"
         "mockL" -> "paper:L:mock$id"
         "mockW" -> "write:mock"
@@ -155,8 +172,11 @@ class PlanTask(val kind: String, val id: String) {
         "speak" -> tr("Speaking: ", "محادثة: ") + (Content.speaking.firstOrNull { it.id == id }?.topic ?: id)
         "lesson" -> tr("Lesson: ", "درس: ") + (Content.lessons.firstOrNull { it.id == id }?.let { it.titleL() } ?: id)
         "vocab" -> tr("Review 10 words", "مراجعة 10 كلمات")
+        "review" -> tr("Review your mistakes", "راجع أخطاءك") + mistakesDue(Content.store).size.let { if (it > 0) " ($it)" else "" }
+        "dict" -> tr("Dictation: names, numbers and dates", "إملاء: أسماء وأرقام وتواريخ")
         "drill" -> tr("Drill: ", "تدريب: ") + skillName(id)
         "check" -> tr("Checkpoint test (updates your plan)", "اختبار متابعة (يحدّث خطتك)")
+        "ext" -> tr("Full test online: ", "اختبار كامل أونلاين: ") + (Content.external.firstOrNull { it.id == id }?.title ?: id)
         "mockR" -> tr("Mock $id: Reading, 60 min", "محاكاة $id: القراءة، 60 دقيقة")
         "mockL" -> tr("Mock $id: Listening", "محاكاة $id: الاستماع")
         "mockW" -> tr("Mock: Writing, 60 min", "محاكاة: الكتابة، 60 دقيقة")
@@ -191,8 +211,11 @@ private class Picker(val st: Store) {
         val l = Content.lessons.filter { it.skill == sk }
         return rotate(l, "les-$sk") { if (st.has("ldone", it.id)) 1 else 0 }?.let { PlanTask("lesson", it.id) }
     }
+    val wt = weakType(st)
     fun section(kind: Char): PlanTask? {
-        val pool = if (kind == 'R') Content.reading else Content.listening
+        var pool = if (kind == 'R') Content.reading else Content.listening
+        // every other time, pick a passage that has your weakest question type
+        if (wt != null && n("weak-$kind") % 2 == 0) { val f = pool.filter { s -> s.groups.any { g -> g.qs.any { it.t == wt.type } } }; if (f.isNotEmpty()) pool = f }
         return rotate(pool, "sec-$kind") { st.mapInt("secn", it.id) }?.let { PlanTask(if (kind == 'R') "read" else "listen", it.id) }
     }
     fun writing(task: Int): PlanTask? {
@@ -205,7 +228,7 @@ private class Picker(val st: Store) {
         val k = n("t-$sk")
         return when (sk) {
             "reading" -> when (ph) { Phase.BUILD -> if (k % 2 == 0) lesson("reading") else PlanTask("drill", "reading"); else -> section('R') }
-            "listening" -> when (ph) { Phase.BUILD -> if (k % 2 == 0) lesson("listening") else PlanTask("drill", "listening"); else -> section('L') }
+            "listening" -> when (ph) { Phase.BUILD -> listOf(lesson("listening"), PlanTask("drill", "listening"), PlanTask("dict", ""))[k % 3]; else -> if (k % 4 == 3) PlanTask("dict", "") else section('L') }
             "writing" -> when (ph) {
                 Phase.BUILD -> if (k % 2 == 0) lesson("writing") else writing(1)
                 Phase.PRACTICE -> if (level(st, "writing") < 5.5) writing(if (k % 3 == 2) 2 else 1) else writing(if (k % 2 == 0) 2 else 1)
@@ -228,6 +251,7 @@ fun generatePlan(st: Store, total: Int): List<List<PlanTask>> {
     val sum = w.values.sum()
     val mocks = mockCount()
     var mockI = 0
+    var extI = 0
     val days = mutableListOf<List<PlanTask>>()
     for (d in 1..total) {
         val ph = phaseOf(d, total)
@@ -239,7 +263,14 @@ fun generatePlan(st: Store, total: Int): List<List<PlanTask>> {
             days += out; continue
         }
         if (d % 7 == 0) {
-            if (ph == Phase.EXAM) { val m = ((mockI / 2) % mocks) + 1; out += PlanTask(if (mockI % 2 == 0) "mockR" else "mockL", "$m"); mockI++ }
+            if (ph == Phase.EXAM) {
+                // Exam stage: every other week a full online test (real Reading and Listening scores), otherwise a mock in the app
+                if (Content.external.isNotEmpty() && extI % 2 == 0) {
+                    val pool = Content.external.sortedBy { if (st.has("extdone", it.id)) 1 else 0 }
+                    out += PlanTask("ext", pool[(extI / 2) % pool.size].id)
+                } else { val m = ((mockI / 2) % mocks) + 1; out += PlanTask(if (mockI % 2 == 0) "mockR" else "mockL", "$m"); mockI++ }
+                extI++
+            }
             else out += PlanTask("check", "")
         }
         val used = mutableSetOf<String>()
@@ -253,6 +284,7 @@ fun generatePlan(st: Store, total: Int): List<List<PlanTask>> {
             if (used.size >= credit.size) break
         }
         if (slots >= 2 && d % 2 == 1 && out.none { it.kind == "vocab" } && out.size < 4) out += PlanTask("vocab", "")
+        if (d % 3 == 2 && out.size < 4) out += PlanTask("review", "")
         days += out
     }
     return days
