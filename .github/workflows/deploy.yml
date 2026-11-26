@@ -1,0 +1,22 @@
+name: Deploy to Cloudflare Pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare site folder
+        run: |
+          mkdir /tmp/site
+          rsync -a --exclude '.git' --exclude '.github' --exclude 'android-app' --exclude 'scripts' --exclude 'README.md' ./ /tmp/site/
+      - name: Deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: a5aa88e4862fd0f6b4652d92337e902b
+        run: npx --yes wrangler@latest pages deploy /tmp/site --project-name khotwa-ielts --branch main --commit-dirty=true
